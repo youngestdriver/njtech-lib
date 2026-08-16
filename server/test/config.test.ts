@@ -34,4 +34,11 @@ describe("loadConfig", () => {
     expect(c.dbPath).toBe("server/data/app.db");
     expect(c.tokenTtlSec).toBe(7 * 24 * 3600);
   });
+
+  it("非法数值 env 抛错（防止 NaN 保活间隔→1ms 打对方服务器）", () => {
+    expect(() => loadConfig({ ...BASE, NJ_SEAT_PORT: "abc" }))
+      .toThrow(/NJ_SEAT_PORT/);
+    expect(() => loadConfig({ ...BASE, NJ_SEAT_KEEPALIVE_MS: "abc" }))
+      .toThrow(/NJ_SEAT_KEEPALIVE_MS/);
+  });
 });
