@@ -1764,8 +1764,9 @@ beforeEach(async () => {
   const unj = await createMockUnjtech(casMock.url);
   seatMock = await createMockSeat(unj.url);
   store = new AccountStore(join(dir, "t.db"), Buffer.alloc(32, 3));
+  // retryDelays 传 [0,0,0] 让测试瞬时完成（不真的睡 1s/2s/4s）
   pool = new SessionPool(store, new CasClient(),
-    new SeatStateMachine(seatMock.url), new SeatGraphql(seatMock.url));
+    new SeatStateMachine(seatMock.url), new SeatGraphql(seatMock.url), [0, 0, 0]);
 });
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
@@ -1799,9 +1800,65 @@ describe("SessionPool", () => {
     const r = await pool.cancel(a.id);
     expect(r.ok).toBe(false);
   });
+
+  it("reserve 需验证码(1000): 返回 needCaptcha + imageData + captchaToken", async () => {
+    seatMock.graphql.reserveError = { code: 1000, message: "need captcha" };
+    const a = await pool.addAccount("2023001", "mypassword");
+    const r = await pool.reserve(a.id, 122811, "34,28");
+    expect(r).toEqual({ needCaptcha: true, imageData: "img-b64", captchaToken: "cap-token" });
+    seatMock.graphql.reserveError = undefined;
+  });
+
+  it("reserve 空验证码直接成功", async () => {
+    const a = await pool.addAccount("2023001", "mypassword");
+    const r = await pool.reserve(a.id, 122811, "34,28");
+    expect(r).toEqual({ ok: true });
+  });
+
+  it("reserveWithCaptcha 成功后返回 ok", async () => {
+    const a = await pool.addAccount("2023001", "mypassword");
+    const r = await pool.reserveWithCaptcha(a.id, 122811, "34,28", "cap-token", "pk3x");
+    expect(r).toEqual({ ok: true });
+  });
+
+  it("cancel 成功路径: 有预约→退座→复查为空", async () => {
+    seatMock.graphql.reserve = { token: "t1", status: 3, lib_id: 122811,
+      lib_name: "新书借阅室", seat_key: "34,28", seat_name: "87", exp_date_str: "20:19" };
+    const a = await pool.addAccount("2023001", "mypassword");
+    const r = await pool.cancel(a.id);
+    expect(r).toEqual({ ok: true });
+    seatMock.graphql.reserve = null;
+  });
+
+  it("cancel 复查仍有预约: 返回错误", async () => {
+    seatMock.graphql.reserve = { token: "t1", status: 3, lib_id: 122811,
+      lib_name: "新书借阅室", seat_key: "34,28", seat_name: "87", exp_date_str: "20:19" };
+    seatMock.graphql.keepReserveAfterCancel = true;
+    const a = await pool.addAccount("2023001", "mypassword");
+    const r = await pool.cancel(a.id);
+    expect(r.ok).toBe(false);
+    seatMock.graphql.keepReserveAfterCancel = false;
+    seatMock.graphql.reserve = null;
+  });
+
+  it("reauth 失败 1-2 次保持 active, 第 3 次 failed", async () => {
+    const a = await pool.addAccount("2023001", "mypassword");
+    casMock.opts.channelLoginResponse = { status: 502, body: "<html>bad</html>" };
+    await pool.reauth(a.id);
+    expect((await pool.list()).find(x => x.id === a.id)!.status).toBe("active");
+    await pool.reauth(a.id);
+    expect((await pool.list()).find(x => x.id === a.id)!.status).toBe("active");
+    await pool.reauth(a.id);
+    expect((await pool.list()).find(x => x.id === a.id)!.status).toBe("failed");
+    casMock.opts.channelLoginResponse = undefined;
+  });
 });
 ```
-（mock-seat 的 GraphQL 端点在 Task 6 基础上扩展：`curReserve` 可配置返回 reserve 或 null，`reserueSeat`/`reserveCancle` 记录调用即可；`createMockSeat` 增加 `opts.graphql: { reserve: any; getSToken: string }`。）
+（mock-seat 的 GraphQL 端点扩展为可配置：`createMockSeat(u5Base, graphqlOpts?)`，`graphqlOpts` 挂到返回值 `graphql` 属性上且**可变**，字段：
+- `reserve: any`（curReserve 的 reserve 值，默认 null）；`getSToken: string | null`（默认 "st-1"）
+- `reserveError?: { code: number; message: string }`（reserueSeat 返回 errors，测试 1000=需验证码）
+- `keepReserveAfterCancel?: boolean`（true 时 reserveCancle 后 curReserve 仍返回 reserve，测试"退座复查仍有预约"分支）
+- `captcha: { code: string; data: string }`（captcha 查询返回值，默认 `{code:"cap-token", data:"img-b64"}`））
 
 - [ ] **Step 3: 运行确认失败 → 实现 session-pool.ts**
 
@@ -1829,11 +1886,16 @@ export class SessionPool {
   private locker = new Locker();
 
   constructor(private store: AccountStore, private cas: CasClient,
-              private sm: SeatStateMachine, private gql: SeatGraphql) {}
+              private sm: SeatStateMachine, private gql: SeatGraphql,
+              private retryDelays: number[] = RETRY_DELAYS) {}
 
   async addAccount(username: string, password: string, alias?: string) {
     const row = this.store.add(username, password, alias);
-    await this.login(row.id, password);
+    try {
+      await this.login(row.id, password);
+    } catch (e) {
+      this.store.setStatus(row.id, "failed", (e as Error).message);  // 新账号首登失败 = 终态 failed
+    }
     return this.info(row.id);
   }
 
@@ -1856,12 +1918,19 @@ export class SessionPool {
     return j;
   }
 
-  /** 完整登录链: seat①-④ → CAS channel → seat⑤-⑥; 失败退避与状态落库 */
+  /** 完整登录链: seat①-④ → CAS channel → seat⑤-⑥.
+   * 错误分级(全局约束): captcha-required → needs-captcha; bad-credentials 不重试;
+   * 其余协议错误全链重走 ≤2 次; 网络错误退避 retryDelays(1s/2s/4s) 封顶 3 次.
+   * 每次尝试用全新 jar（残留 TGC 会触发 CAS SSO 直通, 登录表单永不出现）.
+   * 失败抛错, 状态由调用方(addAccount/reauth)决定. */
   private async login(id: number, password: string): Promise<void> {
-    const jar = this.jar(id);
     const username = this.store.list().find(a => a.id === id)!.username;
     let lastErr: Error | null = null;
-    for (let attempt = 0; attempt < 2; attempt++) {
+    let protocolAttempts = 0;
+    let networkAttempts = 0;
+    while (protocolAttempts < 2 && networkAttempts < 3) {
+      this.jars.set(id, new CookieJar());   // 全新 jar
+      const jar = this.jars.get(id)!;
       try {
         const u5 = await this.sm.start(jar);
         const page = await this.sm.toCasLoginPage(jar, u5);
@@ -1876,10 +1945,18 @@ export class SessionPool {
           this.store.setStatus(id, "needs-captcha", "CAS 要求验证码，请手动处理");
           return;
         }
-        await sleep(RETRY_DELAYS[Math.min(attempt, RETRY_DELAYS.length - 1)]);
+        if (e instanceof CasError && e.kind === "bad-credentials") {
+          break;   // 密码不会变, 重试无意义且有风控风险
+        }
+        if (e instanceof CasError) {
+          protocolAttempts++;
+        } else {
+          await sleep(this.retryDelays[Math.min(networkAttempts, this.retryDelays.length - 1)]);
+          networkAttempts++;
+        }
       }
     }
-    this.store.setStatus(id, "failed", lastErr?.message ?? "登录失败");
+    throw lastErr ?? new Error("登录失败");
   }
 
   private async ensureSession(id: number): Promise<CookieJar> {
@@ -1904,14 +1981,20 @@ export class SessionPool {
     });
   }
 
+  /** 重登: 失败 1-2 次保持 active(可继续重试), 第 3 次 → failed（全局约束） */
   async reauth(id: number): Promise<void> {
     return this.locker.withLock(`acct:${id}`, async () => {
-      const password = this.store.getPassword(id);
-      await this.login(id, password);
-      if (this.store.list().find(a => a.id === id)!.status === "failed") {
+      try {
+        const password = this.store.getPassword(id);
+        await this.login(id, password);
+      } catch (e) {
         const streak = (this.failStreak.get(id) ?? 0) + 1;
         this.failStreak.set(id, streak);
-        if (streak >= 3) this.store.setStatus(id, "failed", "连续 3 次重登失败");
+        if (streak >= 3) {
+          this.store.setStatus(id, "failed", "连续 3 次重登失败");
+        } else {
+          this.store.setStatus(id, "active", `重登失败(${streak}/3): ${(e as Error).message}`);
+        }
       }
     });
   }
