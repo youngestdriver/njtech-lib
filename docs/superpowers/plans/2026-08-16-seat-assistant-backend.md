@@ -185,7 +185,7 @@ function parseNum(raw: string | undefined, def: number, name: string): number {
 - [ ] **Step 5: 运行测试确认通过**
 
 Run: `cd server && npx vitest run test/config.test.ts`
-Expected: PASS（4 tests）
+Expected: PASS（5 tests）
 
 - [ ] **Step 6: 提交**
 
