@@ -1,0 +1,796 @@
+{
+ "total": 113,
+ "apps": [
+  {
+   "name": "外文资源",
+   "server": "http://lib.njtech.edu.cn",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": ""
+  },
+  {
+   "name": "ISI平台-WOS核心合集SSCI（文摘）",
+   "server": "https://webofscience.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": ""
+  },
+  {
+   "name": "SpringerLink电子期刊",
+   "server": "http://link.springer.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "期刊"
+  },
+  {
+   "name": "CNKI-工具书数据库远程镜像",
+   "server": "http://gongjushu.cnki.net",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": ""
+  },
+  {
+   "name": "Nature及系列子刊",
+   "server": "http://www.nature.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "期刊"
+  },
+  {
+   "name": "CNKI-期刊全文数据库本地镜像",
+   "server": "http://202.119.252.164",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "期刊"
+  },
+  {
+   "name": "CNKI-博硕学位论文全文数据库远程镜像",
+   "server": "https://kns.cnki.net",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "学位论文"
+  },
+  {
+   "name": "读秀",
+   "server": "http://www.duxiu.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "多类型出版物"
+  },
+  {
+   "name": "Nature_Machine_Intelligence",
+   "server": "https://www.nature.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": ""
+  },
+  {
+   "name": "CJDA剑桥电子期刊回溯库",
+   "server": "https://www.cambridge.org",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "期刊"
+  },
+  {
+   "name": "电子期刊：Public Administration Review  ",
+   "server": "https://onlinelibrary.wiley.com",
+   "group": "应用分组树/web应用",
+   "connectState": "1",
+   "description": "期刊"
+  },
+  {
+   "name": "国研网统计数据库",
+   "server": "https://edu.drcnet.com.cn",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "研究报告"
+  },
+  {
+   "name": "读秀学术搜索（使用4.0版本阅读器）（全文/文摘）",
+   "server": "https://www.duxiu.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": ""
+  },
+  {
+   "name": "CNKI-期刊\\博硕\\会议\\工具书\\标准本地镜像",
+   "server": "http://202.119.252.164",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "会议论文 学位论文 期刊"
+  },
+  {
+   "name": "江苏省外文电子书统一共享平台—享阅读",
+   "server": "http://www.infocircle.cn",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "文献传递平台 图书/工具书"
+  },
+  {
+   "name": "Apabi电子图书、工具书、年鉴",
+   "server": "http://202.119.252.175",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "图书/工具书"
+  },
+  {
+   "name": "南京工业大学学位论文数据库",
+   "server": "https://xwlw.njtech.edu.cn",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "学位论文"
+  },
+  {
+   "name": "ASME(美国机械工程协会)期刊数据库",
+   "server": "https://asmedigitalcollection.asme.org",
+   "group": "应用分组树/web应用",
+   "connectState": "1",
+   "description": "期刊"
+  },
+  {
+   "name": "电子期刊：Journal of Public Administration Research",
+   "server": "https://academic.oup.com",
+   "group": "应用分组树/web应用",
+   "connectState": "1",
+   "description": "期刊"
+  },
+  {
+   "name": "中文在线--书香南工",
+   "server": "http://njtech.chineseall.cn",
+   "group": "应用分组树/web应用",
+   "connectState": "1",
+   "description": "图书/工具书"
+  },
+  {
+   "name": "ISI平台-ESI",
+   "server": "https://esi.clarivate.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "事实数据"
+  },
+  {
+   "name": "ISI平台-CSCD(中国科学引文数据库)（文摘)",
+   "server": "http://apps.webofknowledge.com",
+   "group": "应用分组树/web应用",
+   "connectState": "1",
+   "description": "期刊"
+  },
+  {
+   "name": "国研网经济管理案例库",
+   "server": "https://caselib.drcnet.com.cn",
+   "group": "应用分组树/web应用",
+   "connectState": "1",
+   "description": ""
+  },
+  {
+   "name": "南京工业大学专利应用云平台（全文/文摘）",
+   "server": "http://njtech.patsev.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "专利"
+  },
+  {
+   "name": "Nature_Catalysis",
+   "server": "https://www.nature.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": ""
+  },
+  {
+   "name": "Nature_Energy",
+   "server": "https://www.nature.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": ""
+  },
+  {
+   "name": "CNKI-标准文献数据库",
+   "server": "https://kns.cnki.net",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "标准"
+  },
+  {
+   "name": "UMI_ProQuest博硕士学位论文",
+   "server": "https://www.pqdtcn.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "学位论文"
+  },
+  {
+   "name": "Cell_Press",
+   "server": "http://www.sciencedirect.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "期刊"
+  },
+  {
+   "name": "万方",
+   "server": "https://www.wanfangdata.com.cn",
+   "group": "应用分组树/web应用",
+   "connectState": "1",
+   "description": ""
+  },
+  {
+   "name": "GoOA开放获取论文一站式发现平台（全文/文摘）",
+   "server": "http://gooa.las.ac.cn",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "期刊"
+  },
+  {
+   "name": "Methods_in_Enzymology酶学方法论（可访问年限1955—2017）",
+   "server": "https://www.sciencedirect.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "图书/工具书"
+  },
+  {
+   "name": "百链云图书馆（全文/文摘）",
+   "server": "https://www.blyun.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "多类型出版物 文献传递平台"
+  },
+  {
+   "name": "IEL数据库",
+   "server": "https://ieeexplore.ieee.org",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "会议论文 标准 期刊"
+  },
+  {
+   "name": "外文（校内）",
+   "server": "http://lib.njtech.edu.cn",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": ""
+  },
+  {
+   "name": "ProQuest_EBC电子书数据库",
+   "server": "https://ebookcentral.proquest.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "图书/工具书"
+  },
+  {
+   "name": "超星期刊数据库",
+   "server": "https://qikan.chaoxing.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "期刊"
+  },
+  {
+   "name": "Sunway尚唯科技报告资源服务系统本地镜像",
+   "server": "http://202.119.252.173",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "研究报告"
+  },
+  {
+   "name": "Arxiv预印本服务（全文/文摘）",
+   "server": "https://arxiv.org",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "期刊"
+  },
+  {
+   "name": "锐思金融研究数据库（文摘）",
+   "server": "http://db.resset.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "事实数据"
+  },
+  {
+   "name": "中国科学引文数据库（ISI-CSCD）（文摘）",
+   "server": "http://login.webofknowledge.com",
+   "group": "应用分组树/web应用",
+   "connectState": "1",
+   "description": "期刊"
+  },
+  {
+   "name": "SpringerLink图书数据库",
+   "server": "https://link.springer.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "图书/工具书"
+  },
+  {
+   "name": "ACS（美国化学学会）期刊数据库",
+   "server": "https://pubs.acs.org",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "期刊"
+  },
+  {
+   "name": "Taylor&Francis期刊数据库",
+   "server": "http://www.tandfonline.com",
+   "group": "应用分组树/web应用",
+   "connectState": "1",
+   "description": "期刊"
+  },
+  {
+   "name": "RSC电子期刊数据库",
+   "server": "https://pubs.rsc.org",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "期刊"
+  },
+  {
+   "name": "Science数据库",
+   "server": "http://www.sciencemag.org",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "期刊"
+  },
+  {
+   "name": "中文发现系统",
+   "server": "http://njtech.zhizhen.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "多类型出版物 统一检索平台"
+  },
+  {
+   "name": "南京工业大学纸本图书数字化服务平台",
+   "server": "https://libdigit.njtech.edu.cn",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "图书/工具书"
+  },
+  {
+   "name": "中文社会科学引文索引CSSCI（文摘）",
+   "server": "http://cssci.nju.edu.cn",
+   "group": "应用分组树/web应用",
+   "connectState": "1",
+   "description": "期刊"
+  },
+  {
+   "name": "Ei_Village工程索引数据库（文摘）",
+   "server": "https://www.engineeringvillage.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": ""
+  },
+  {
+   "name": "SciFinderN（文摘）",
+   "server": "https://scifinder-n.cas.org",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "多类型出版物"
+  },
+  {
+   "name": "IOP(英国物理学会)数据库",
+   "server": "https://iopscience.iop.org",
+   "group": "应用分组树/web应用",
+   "connectState": "1",
+   "description": "期刊"
+  },
+  {
+   "name": "北大法意中国法律资源数据库平台",
+   "server": "https://data.lawyee.net",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "研究报告"
+  },
+  {
+   "name": "AIP（美国物理联合会）期刊数据库",
+   "server": "https://www.scitation.org",
+   "group": "应用分组树/web应用",
+   "connectState": "1",
+   "description": "期刊"
+  },
+  {
+   "name": "Frontiers系列期刊数据库",
+   "server": "http://journal.hep.com.cn",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "期刊"
+  },
+  {
+   "name": "新东方多媒体学习库",
+   "server": "https://library.koolearn.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "其他"
+  },
+  {
+   "name": "电子期刊：Theory & Perspectives on Public Management and Governance  ",
+   "server": "https://academic.oup.com",
+   "group": "应用分组树/web应用",
+   "connectState": "1",
+   "description": "期刊"
+  },
+  {
+   "name": "SpringerProtocols在线实验室指南(可访问年限1980-2021年)",
+   "server": "https://experiments.springernature.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "图书/工具书"
+  },
+  {
+   "name": "DOAJ期刊数据库（全文/文摘）",
+   "server": "https://doaj.org",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "期刊"
+  },
+  {
+   "name": "PNAS美国科学院院报",
+   "server": "https://www.pnas.org",
+   "group": "应用分组树/web应用",
+   "connectState": "1",
+   "description": "期刊"
+  },
+  {
+   "name": "Gale文学资源中心",
+   "server": "https://link.gale.com",
+   "group": "应用分组树/web应用",
+   "connectState": "1",
+   "description": "其他"
+  },
+  {
+   "name": "CNKI-中国引文数据库",
+   "server": "https://ref.cnki.net",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "其他"
+  },
+  {
+   "name": "自然大师课堂在线课程 ",
+   "server": "https://www.naturemasterclassesonline.cn",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "其他"
+  },
+  {
+   "name": "NoteExpress文献管理软件",
+   "server": "http://www.inoteexpress.com",
+   "group": "应用分组树/web应用",
+   "connectState": "1",
+   "description": "其他"
+  },
+  {
+   "name": "超星名师讲坛本地镜像",
+   "server": "https://libdigit.njtech.edu.cn:88",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "其他"
+  },
+  {
+   "name": "ISI平台-JCR",
+   "server": "https://jcr.clarivate.com",
+   "group": "应用分组树/web应用",
+   "connectState": "1",
+   "description": "其他"
+  },
+  {
+   "name": "CNKI-期刊\\博硕\\会议\\工具书\\标准总库平台",
+   "server": "https://www.cnki.net",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "会议论文 学位论文 期刊"
+  },
+  {
+   "name": "人大复印报刊资料数据库",
+   "server": "http://www.rdfybk.com",
+   "group": "应用分组树/web应用",
+   "connectState": "1",
+   "description": ""
+  },
+  {
+   "name": "座位预约（测试）",
+   "server": "https://seat.njtech.edu.cn",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": ""
+  },
+  {
+   "name": "台湾华艺学术文献数据库",
+   "server": "https://www.airitilibrary.cn",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "学位论文 期刊"
+  },
+  {
+   "name": "SIAM全文电子期刊现刊库",
+   "server": "http://epubs.siam.org",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "试用数据库(截至240504)"
+  },
+  {
+   "name": "ACM_Digital_Library数据库",
+   "server": "https://dl.acm.org",
+   "group": "应用分组树/web应用",
+   "connectState": "1",
+   "description": ""
+  },
+  {
+   "name": "APS(美国物理学会)期刊数据库",
+   "server": "https://journals.aps.org",
+   "group": "应用分组树/web应用",
+   "connectState": "1",
+   "description": "期刊"
+  },
+  {
+   "name": "ScienceRobotics（科学机器人)",
+   "server": "https://robotics.sciencemag.org",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": ""
+  },
+  {
+   "name": "CNKI-会议论文全文数据库远程镜像",
+   "server": "https://kns.cnki.net",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "学位论文"
+  },
+  {
+   "name": "中国共产党思想理论资源数据库",
+   "server": "https://data.lilun.cn",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": ""
+  },
+  {
+   "name": "NSTL(国家科技文献中心)免费期刊数据库",
+   "server": "https://cds.nstl.gov.cn",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "期刊"
+  },
+  {
+   "name": "CNKI-工具书数据库本地镜像",
+   "server": "http://202.119.252.164",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": ""
+  },
+  {
+   "name": "中文（校内）",
+   "server": "http://lib.njtech.edu.cn",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": ""
+  },
+  {
+   "name": "博学易知考研数据库",
+   "server": "https://web.twbxyz.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "其他"
+  },
+  {
+   "name": "EPS全球统计数据/分析平台（文摘）",
+   "server": "http://olap.epsnet.com.cn",
+   "group": "应用分组树/web应用",
+   "connectState": "1",
+   "description": "事实数据"
+  },
+  {
+   "name": "EBSCO学术信息、商业信息数据库（全文/文摘）",
+   "server": "https://search.ebscohost.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "期刊"
+  },
+  {
+   "name": "ISI平台-InCites",
+   "server": "https://incites.clarivate.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "事实数据"
+  },
+  {
+   "name": "Summon外文发现系统",
+   "server": "http://njtech.summon.serialssolutions.com",
+   "group": "应用分组树/web应用",
+   "connectState": "1",
+   "description": "多类型出版物 统一检索平台"
+  },
+  {
+   "name": "Wiley期刊数据库",
+   "server": "https://onlinelibrary.wiley.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "期刊"
+  },
+  {
+   "name": "Arxiv预印本服务（全文/文摘）站点1",
+   "server": "http://cn.arxiv.org",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": ""
+  },
+  {
+   "name": "超星电子图书远程镜像",
+   "server": "https://www.sslibrary.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "图书/工具书"
+  },
+  {
+   "name": "OA资源学术搜索（全文/文摘）",
+   "server": "http://www.oalib.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "期刊"
+  },
+  {
+   "name": "JSTOR期刊数据库",
+   "server": "https://www.jstor.org",
+   "group": "应用分组树/web应用",
+   "connectState": "1",
+   "description": ""
+  },
+  {
+   "name": "CNKI-会议论文全文数据库本地镜像",
+   "server": "http://202.119.252.164",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "学位论文"
+  },
+  {
+   "name": "超星名师讲坛远程镜像",
+   "server": "https://ssvideo.superlib.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "其他"
+  },
+  {
+   "name": "SCI",
+   "server": "https://www.webofscience.com",
+   "group": "应用分组树/web应用",
+   "connectState": "1",
+   "description": ""
+  },
+  {
+   "name": "SDOS",
+   "server": "https://www.sciencedirect.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": ""
+  },
+  {
+   "name": "CADAL数字图书馆",
+   "server": "http://cadal.edu.cn",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "图书/工具书"
+  },
+  {
+   "name": "ASCE(美国土木工程协会)期刊数据库",
+   "server": "https://ascelibrary.org",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "期刊"
+  },
+  {
+   "name": "壹专利检索分析数据库",
+   "server": "https://www.patyee.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "专利"
+  },
+  {
+   "name": "Sunway尚唯科技报告资源服务系统远程镜像",
+   "server": "http://bg.sunwayinfo.com.cn",
+   "group": "应用分组树/web应用",
+   "connectState": "1",
+   "description": "研究报告"
+  },
+  {
+   "name": "opac",
+   "server": "http://202.119.252.200:8080",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": ""
+  },
+  {
+   "name": "万方数据知识服务平台（期刊+学位论文）",
+   "server": "https://www.wanfangdata.com.cn",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "学位论文  期刊"
+  },
+  {
+   "name": "CNKI-硕士学位论文全文数据库本地镜像",
+   "server": "http://202.119.252.164",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "学位论文"
+  },
+  {
+   "name": "ISI平台-WOS核心合集SCI（文摘）",
+   "server": "https://www.webofknowledge.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": ""
+  },
+  {
+   "name": "美国科研出版社-OA资源库（全文/文摘）",
+   "server": "https://www.scirp.org",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": ""
+  },
+  {
+   "name": "超星电子图书本地镜像",
+   "server": "https://libdigit.njtech.edu.cn:9090",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "图书/工具书"
+  },
+  {
+   "name": "CNKI-博士学位论文全文数据库本地镜像",
+   "server": "http://202.119.252.164",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": ""
+  },
+  {
+   "name": "电子期刊：Geotechnique",
+   "server": "https://www.icevirtuallibrary.com",
+   "group": "应用分组树/web应用",
+   "connectState": "1",
+   "description": "期刊"
+  },
+  {
+   "name": "中文资源",
+   "server": "http://lib.njtech.edu.cn",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": ""
+  },
+  {
+   "name": "CNKI-期刊全文数据库远程镜像",
+   "server": "https://kns.cnki.net",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "期刊"
+  },
+  {
+   "name": "Emerald回溯内容全国在线",
+   "server": "https://www.emeraldinsight.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "期刊"
+  },
+  {
+   "name": "Woodhead电子书",
+   "server": "http://www.sciencedirect.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "图书/工具书"
+  },
+  {
+   "name": "博学易知考试数据库",
+   "server": "https://exam.twbxyz.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "其他"
+  },
+  {
+   "name": "专利信息服务平台",
+   "server": "http://njtech.patsev.com",
+   "group": "应用分组树/web应用",
+   "connectState": "1",
+   "description": ""
+  },
+  {
+   "name": "图书馆书目检索系统",
+   "server": "http://202.119.252.200:8080",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": ""
+  },
+  {
+   "name": "Wiley电子书",
+   "server": "http://olabout.wiley.com",
+   "group": "应用分组树/web应用",
+   "connectState": "0",
+   "description": "图书/工具书"
+  }
+ ]
+}

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>登录页面</title>
+	<link rel="icon" id="favicon" type="image/x-icon" href="data:;base64,=">
+	<link rel="stylesheet" type="text/css" href="/enlink/files/login/font/iconfont.css">
+	<link rel="stylesheet" href="/enlink/files/login/css/login.css">
+	<link rel="stylesheet" href="/enlink/files/login/css/common.css">
+	<link rel="stylesheet" href="/enlink/files/login/css/jigsaw.css">
+	<link rel="stylesheet" href="/enlink/files/login/css/mobile.css" media="all and (max-width: 640px)">
+	<script src="/enlink/files/login/font/iconfont.js"></script>
+	<script src="/enlink/files/login/js/jquery.js"></script>
+	<script src="/enlink/files/login/js/jquery.cookie.min.js"></script>
+	<script src="/enlink/files/login/js/jquery.qrcode.v1.0.min.js"></script>
+	<script src="/enlink/files/login/js/jquery.i18n.properties.js"></script>
+	<script src="/enlink/files/login/js/jVerify.js"></script>
+	<script src="/enlink/files/login/js/jigsaw.js"></script>
+	<script src="/enlink/files/login/js/reg.js"></script>
+	<script src="/enlink/files/login/js/crypto-js.js"></script>
+	<script src="/enlink/files/login/js/base64.js"></script>
+	<script src="/enlink/files/login/js/ieee754.js"></script>
+	<script src="/enlink/files/login/js/md5.js"></script>
+	<script src="/enlink/files/login/js/buffer.js"></script>
+	<script src="/enlink/files/login/js/promise.js"></script>
+	<script src="/enlink/files/login/js/theme.js"></script>
+	<script src="/enlink/files/login/js/common.js"></script>
+
+	<script>
+		var indexConfig = {"key":"kyEqiDXY4TCXjcUV","name":null,"termsUrl":"https:\/\/www.baidu.com\/help\/terms.html","privacyUrl":"https:\/\/www.baidu.com\/help\/privacy.html","authList":{}};
+		var diyConfig = {"id":"201","template":"\u767B\u5F55\u9875\u9875\u9762","labelLogo":"\/files\/diy\/customLog.png","labelTitle":"\u5E94\u7528\u8BBF\u95EE\u7EDF\u4E00\u5165\u53E3-\u767B\u5F55\u9875","logo":"\/files\/diy\/customLog.png","title":"\u5E94\u7528\u8BBF\u95EE\u7EDF\u4E00\u5165\u53E3","slogan":"","copyright":{"name":"","hide":false,"description":"","number":"","link":"https:\/\/"},"backgroundImage":"\/files\/diy\/iam_login.png","usernameTips":"\u8BF7\u8F93\u5165\u8D26\u53F7","passwordTips":"\u8BF7\u8F93\u5165\u5BC6\u7801","myCollection":"\u6211\u7684\u6536\u85CF","hide":{"sms":true,"dingTalk":true,"weChat":true,"enWeChat":true,"feishu":null,"enApp":false,"captcha":true,"passwdReset":false,"logoutButton":false,"userCenter":false,"downloadLink":false,"addApp":false,"tunnel":false},"editList":[{"name":"downloadCenter","diy":false,"hide":false,"link":"https:\/\/vpnlib.njtech.edu.cn\/enlink\/static\/download\/index.html"}],"advice":{"hide":true,"location":"right","title":"","content":""},"advice2":{"hide":true,"location":"right","title":"","content":[]},"enableEnApp":true,"smsEnabled":false};
+		var ssoConf = {"name":"OAUTH","url":"https:\/\/u.njtech.edu.cn\/oauth2\/authorize?client_id=nc2Upjt6MbtO8eVD30Cq\u0026redirect_uri=https:\/\/vpnlib.njtech.edu.cn\/enlink\/api\/client\/callback\/oauth\u0026scope=basic\u0026response_type=code\u0026state=ENLINK_OAUTH"};
+		var errMsg = null;
+		var loginPage = null;
+		var userVo = null;
+	</script>
+</head>
+<body>
+	<div id="login">
+		<!-- header -->
+		<header class="top">
+	<section>
+		<a href="javascript: backToIndex(0);">
+			<img class="headerLogo" src="/enlink/files/login/images/img/logo.png">
+		</a>
+		<h1 class="headerTitle"></h1>
+		<p></p>
+	</section>
+	<ul>
+	</ul>
+</header>
+		<!-- content -->
+		<main>
+			<div class="jigsaw-mask" style="display: none;">
+				<div class="jigsaw-area" style="left: calc(50%);transform: translateX(-50%);">
+					<div class="jigsaw-title">
+						<span>请完成安全验证</span>
+						<i class="close-icon">
+							<svg onclick="closeJigsae()" class="icon tip-icon" aria-hidden="false">
+								<use xlink:href="#en-close-s"></use>
+							</svg>
+						</i>
+						<i class="refresh-icon" id="refreshIcon">
+							<svg class="icon tip-icon" aria-hidden="false">
+								<use xlink:href="#en-refresh-white"></use>
+							</svg>
+						</i>
+	
+						<!--						<img id="refreshIcon" src="/enlink/files/login/images/jigsaw/refresh.png" alt="">-->
+					</div>
+					<div class="jigsaw-success text-primary" *ngIf="isSuccess">
+						<span style="color: #3571ff;">验证成功</span>
+					</div>
+					<div id="captcha"></div>
+				</div>
+			</div>
+			<!-- 动态验证码 -->
+			<div class="dynamic_auth_code" style="display: none;">
+				<div>
+						<section class="header">
+								<p>动态验证码验证</p>
+								<i class="close-icon" onclick="dynamicCodeCancel()">
+										<svg onclick="closeJigsae()" class="icon tip-icon" aria-hidden="false">
+												<use xlink:href="#en-close-s"></use>
+										</svg>
+								</i>
+						</section>
+						<section class="main">
+								<p class="desc">
+										<span class="tipss">请您注意查收动态验证码，并将6位动态密码输入下框中。</span>
+										<!-- <i class="refresh-icon" id="refreshIcon">
+												<svg class="icon tip-icon" aria-hidden="false">
+													<use xlink:href="#en-refresh-white"></use>
+												</svg>
+										</i> -->
+								</p>
+								<div>
+										<span class="icon enlinkIcon password">&#xe6e1;</span>
+										<input type="text" id="freshCode" name="code" placeholder="请输入动态验证码">
+										<p class="errTip freshCode">请输入动态验证码！</p>
+								</div>
+								<!-- <p class="time">当前服务器时间 2020年9月17日 19:23:58</p> -->
+						</section>
+						<section class="footer">
+								<button type="button" onclick="dynamicCodeCancel()">取消</button>
+								<button type="button" onclick="dynamicCodeCheck()">确定</button>
+						</section>
+				</div>
+			</div>
+			<section class="main">
+				<!-- 右侧公告 -->
+				<section class="leftNotice">
+					<p>
+						<span>公告</span>
+						<img src="/enlink/files/login/images/announcement.png" alt="">
+					</p>
+					<section class="notice_container" style="overflow: hidden;">
+						<div id="scroll_begin"></div>
+						<div id="scroll_end"></div>
+					</section>
+				</section>
+				<!-- 移动端公告 -->
+				<section class="mobileLeftNotice">
+					<section class="notice_container" style="overflow: hidden;">
+						<div id="scroll_begin">	
+							<!-- <p>
+								<span>公告</span>
+								<img src="/enlink/files/login/images/announcement.png" alt="">
+							</p> -->
+						</div>
+						<div id="scroll_end"></div>
+					</section>
+				</section>
+				<div class="loginForm">
+					<!-- 登录 -->
+					<div class="page loginFormPage" id="loginFormPage">
+						<!-- <h2>密码登录</h2> -->
+						<div class="scan_login" onmousemove="rightPartnerCodeMouseEnter('scan')"
+							 onmouseout="rightPartnerCodeMouseOut('scan')"
+							 onclick="pageChange('enAppLogin')">
+							<svg class="icon tip-icon">
+								<use xlink:href="#en-QR_code"></use>
+							</svg>
+						</div>
+						<p class="right_partner_code scan" style="display: none;">
+							<span class="tip-text">扫码登录</span>
+							<svg class="icon tip-icon">
+								<use xlink:href="#en-tip-bg"></use>
+							</svg>
+						</p>
+						<section class="tab">
+							<p class="selected" style="margin-right:50px" onclick="loginStyleChange(0)">SSO登录</p>
+							<p onclick="loginStyleChange(1)">账号登录</p>
+						</section>
+						<form id="upLoignForm" action="/enlink/sso/login/submit" method="post" style="display: none;">
+							<div>
+								<span class="icon enlinkIcon">&#xe618;</span>
+								<input type="text" id="account" class="username" name="username" placeholder="请输入账号">
+								<p class="errTip account">请输入账号！</p>
+							</div>
+							<div>
+								<span class="icon enlinkIcon password">&#xe61b;</span>
+								<input type="password" id="loginPass" class="password loginEye" placeholder="请输入密码">
+								<input type="hidden" id="realLoginPass" name="password" />
+								<input type="hidden" id="token" name="token" />
+								<!-- <input type="hidden" id="systemInfo" name="systemInfo" /> -->
+								<input type="hidden" id="language" name="language" />
+								<span class="icon enlinkIcon eye_input loginPass en-guanwocong" id="en-eye" onclick="togglePass('loginPass')"></span>
+								<p class="errTip loginPass">请输入密码！</p>
+							</div>
+							<div id="captchaDiv" class="verifyCode" style="display: none">
+								<span class="icon enlinkIcon">&#xe61b;</span>
+								<input type="text" id="verifyCode" class="username" placeholder="请输入验证码">
+								<div id="verify-img"></div>
+								<p class="errTip verifyCode" style="position: absolute;bottom: 0px;left: 0px;"></p>
+							</div>
+							<div class="rememberDiv">
+								<div>
+									<input type="checkbox" id="remberPsw" class="remember" />
+									<label for="remberPsw">记住我</label>
+								</div>
+								<span href="#" onclick="pageChange('phoneCode')" id="messageLogin" class="forgetPass" style="display: none">验证码登录</span>
+								<span href="#" onclick="pageChange('forgetPass')" id="forgetPassBtn" class="forgetPass">忘记密码</span>
+							</div>
+							<button id="loginSubmit" type="button" class="commonBtn" onclick='loginHandle()'>登录</button>
+						</form>
+						<section	class="ssoBtn" style="padding-top: 110px;">
+							<button type="button" class="commonBtn sso" onclick="ssoLoginHandle()" style="margin-bottom: 22px;">SSO登录</button>
+							<button type="button" class="commonBtn account" onclick='loginStyleChange(1)'>切换到账号登录</button>
+						</section>
+						<section class="loginStyle" style="display: none">
+							<div>
+								<p></p>
+								<h2>其它登录方式</h2>
+								<p></p>
+							</div>
+							<ul>
+							</ul>
+						</section>
+						<!-- <p class="login_footer_tips" style="text-align: left">
+							<span class="tips1">出于安全考虑，一旦您访问过那些需要您提供凭证信息的应用时，请操作完成之后</span>
+							<span class="logout">登出</span>
+							<span class="tips2">并关闭浏览器</span>
+						</p> -->
+					</div>
+	
+					<!-- 手机或邮箱验证码登录 -->
+					<div id="phoneCode" class="page loginFormPage message" style="display: none;">
+						<h2>验证码登录</h2>
+						<!-- <div class="login_change" >
+							<svg class="icon tip-icon" aria-hidden="false">
+								<use xlink:href="#en-pc_login"></use>
+							</svg>
+						</div> -->
+						<form id="codeLoginForm" action="/enlink/sso/login/verifyCode" method="post">
+							<div style="margin-bottom:0px">
+								<span class="icon enlinkIcon" style="top:-6px">&#xe618;</span>
+								<input type="text" name="mobileOrEmail" id="messLogin" class="usernamess phone" placeholder="请输入手机号或邮箱">
+								<p class="errTip messLogin">请输入手机号或邮箱！</p>
+							</div>
+							<div style="margin-bottom:0px">
+								<span class="icon enlinkIcon password" style="top:-6px">&#xe61b;</span>
+								<section>
+									<input type="text" name="code" id="codeMessLogin" class="code" placeholder="请输入验证码">
+									<p class="getCode messLogin" onclick="getPhoneOrEmailMessCode('messLogin')">点击获取</p>
+								</section>
+								<p class="errTip codeMessLogin">请输入验证码</p>
+							</div>
+							<div class="forgetPass remember_me">
+								<div>
+									<input type="checkbox" id="rembers" class="remember" />
+									<label for="rembers">记住我</label>
+								</div>
+							</div>
+							<button type="button" class="commonBtn" onclick='messLoginHandle()'>登录</button>
+							<button type="button" class="commonBtn backLoginBtn" onclick='pageChange("loginFormPage")'>返回密码登录</button>
+						</form>
+					</div>
+	
+					<!-- enapp扫码登录 -->
+					<div id="enAppLogin" class="page loginFormPage" style="display: none;">
+						<div class="scan_login" onmousemove="rightPartnerCodeMouseEnter('pass')"
+							 onmouseout="rightPartnerCodeMouseOut('pass')"
+							 onclick="pageChange('loginFormPage')">
+							<svg class="icon tip-icon">
+								<use xlink:href="#en-pc_login"></use>
+							</svg>
+						</div>
+						<p class="right_partner_code pass" style="display: none;">
+							<span class="tip-text">密码登录</span>
+							<svg class="icon tip-icon">
+								<use xlink:href="#en-tip-bg"></use>
+							</svg>
+						</p>
+						<h2>扫码登录</h2>
+						<p class="desc">
+							<span>打开</span>
+							<a href="javascript:void(0);">EnAPP</a>
+							<span>扫一扫登录</span>
+						</p>
+						<section>
+							<div class="enapp_login_container">
+								<!-- <iframe frameborder="0"></iframe> -->
+								<form id="enAppQrForm" action="/enlink/sso/login/enApp" method="post">
+									<input type="hidden" name="userId" id="enApp" />
+								</form>
+								<div id="enapp_login_container">
+	
+								</div>
+								<div class="due" style="display:none">
+									<div class="due_content">
+										<p>二维码已失效</p>
+										<button class="reget" type="button" onclick="getEnAppCode()">请点击刷新</button>
+									</div>
+								</div>
+							</div>
+						</section>
+						<button type="button" class="commonBtn backLoginBtn" onclick='pageChange("loginFormPage")'>返回密码登录</button>
+						<span>下载 EnAPP</span>
+					</div>
+	
+				</div>
+				<!-- 已删 -->
+				<div class="rightPart" style="display: none">
+					<section class="rights" style="display: none">
+						<p><span>安信</span>将获得以下权限：</p>
+						<div>
+							<input type="checkbox" id="selectAll" class="remember" />
+							<label for="selectAll">全选</label>
+						</div>
+						<div>
+							<input type="checkbox" id="getACCName" class="remember" />
+							<label for="getACCName">获得您的账号、姓名</label>
+						</div>
+						<p>授权后表面您已同意<span onclick="openNewTab('termsUrl')">服务协议</span>和<span onclick="openNewTab('privacyUrl')">隐私条款</span></p>
+					</section>
+					<section class="notice" style="display: none">
+						<p>公告:</p>
+						<section style="overflow: hidden;">
+							<div class="scroll_begin"></div>
+							<div class="scroll_end"></div>
+						</section>
+					</section>
+					<!-- <section class="loginStyle" style="display: none">
+						<h2>其它登录方式</h2>
+						<ul>
+						</ul>
+					</section> -->
+				</div>
+			</section>
+		</main>
+		<footer>
+	<p></p>
+	<p><a href="javascript:void(0);"></a></p>
+</footer>
+	</div>
+</body>
+
+<script src="/enlink/files/login/js/login.js"></script>
+
+</html>

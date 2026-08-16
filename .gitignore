@@ -1,0 +1,16 @@
+# macOS
+.DS_Store
+
+# Node
+node_modules/
+dist/
+
+# 运行时数据（含 SQLite 凭据库，严禁入库）
+server/data/
+
+# 环境与密钥
+.env
+*.pem
+
+# 日志
+*.log
