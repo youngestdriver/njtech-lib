@@ -24,7 +24,8 @@ jobs:
             echo "PR 已存在: $EXISTING"
             exit 0
           fi
-          gh pr create -R "${{ github.repository }}" --base main --head "$BRANCH" \
+          PR_URL=$(gh pr create -R "${{ github.repository }}" --base main --head "$BRANCH" \
             --title "自动 PR: $BRANCH" \
-            --body '自动创建（push 触发）。CI 绿灯后自动合并。' \
-            --auto
+            --body '自动创建（push 触发）。CI 绿灯后自动合并。')
+          PR_NUM=$(gh pr view -R "${{ github.repository }}" "$PR_URL" --json number -q .number)
+          gh pr merge -R "${{ github.repository }}" "$PR_NUM" --auto --merge
