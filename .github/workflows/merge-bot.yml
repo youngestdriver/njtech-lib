@@ -1,10 +1,13 @@
 name: merge-bot
 
-# Free 计划私有仓库无原生 auto-merge, 用 check_run 事件等价实现:
-# CI 绿灯 + PR 带 automerge 标签 → 自动合并并删分支
+# Free 计划私有仓库无原生 auto-merge 与分支保护, 用 workflow 等价实现:
+# 带 automerge 标签的 PR 在其 checks 全绿时自动合并并删分支.
+# 两个触发: ①ci 检查完成(绿灯) ②打上 automerge 标签(兼容标签晚于 CI 的场景)
 on:
   check_run:
     types: [completed]
+  pull_request:
+    types: [labeled]
 
 permissions:
   contents: write
@@ -13,16 +16,32 @@ permissions:
 jobs:
   merge:
     runs-on: ubuntu-latest
-    if: github.event.check_run.name == 'ci' && github.event.check_run.conclusion == 'success'
+    if: >-
+      (github.event_name == 'check_run' && github.event.check_run.name == 'ci'
+        && github.event.check_run.conclusion == 'success')
+      || (github.event_name == 'pull_request' && github.event.label.name == 'automerge')
     steps:
-      - name: 合并所有带 automerge 标签的绿灯 PR
+      - name: 合并 checks 全绿且带 automerge 标签的 PR
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          export SHA="${{ github.event.check_run.head_sha }}"
-          for pr in $(gh pr list -R "${{ github.repository }}" --state open --label automerge \
-              --json number,headRefOid \
-              -q '.[] | select(.headRefOid == env.SHA) | .number'); do
+          REPO="${{ github.repository }}"
+          if [ "${{ github.event_name }}" = "check_run" ]; then
+            export SHA="${{ github.event.check_run.head_sha }}"
+            PRS=$(gh pr list -R "$REPO" --state open --label automerge \
+              --json number,headRefOid -q '.[] | select(.headRefOid == env.SHA) | .number')
+          else
+            PRS="${{ github.event.pull_request.number }}"
+          fi
+          for pr in $PRS; do
+            HEAD_SHA=$(gh pr view -R "$REPO" "$pr" --json headRefOid -q .headRefOid)
+            # 防空洞真值: 无任何 check 不视为绿
+            GREEN=$(gh api "repos/$REPO/commits/$HEAD_SHA/check-runs" \
+              -q 'any(.check_runs[]; true) and all(.check_runs[]; .conclusion == "success")')
+            if [ "$GREEN" != "true" ]; then
+              echo "PR #$pr checks 未全绿, 跳过"
+              continue
+            fi
             echo "自动合并 PR #$pr"
-            gh pr merge -R "${{ github.repository }}" "$pr" --merge --delete-branch
+            gh pr merge -R "$REPO" "$pr" --merge --delete-branch
           done
