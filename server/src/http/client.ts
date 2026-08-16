@@ -25,6 +25,7 @@ export async function request(url: string, opts: RequestOpts = {}): Promise<Http
     signal: AbortSignal.timeout(opts.timeoutMs ?? 30_000),
   });
   const body = Buffer.from(await res.arrayBuffer());
-  opts.jar?.set(res.headers.get("set-cookie"), url);
+  // 多 Set-Cookie 必须用 getSetCookie()（Headers.get 会把多值用 ", " 合并, jar 解析会丢第一个之外的 cookie）
+  for (const sc of res.headers.getSetCookie()) opts.jar?.set(sc, url);
   return { status: res.status, headers: res.headers, body };
 }
