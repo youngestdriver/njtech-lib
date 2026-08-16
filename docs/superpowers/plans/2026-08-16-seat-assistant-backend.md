@@ -536,6 +536,8 @@ import http from "node:http";
 export interface MockCasOpts {
   channelRequireCaptcha?: boolean;   // rest/login 响应要求验证码
   formAccept?: (body: URLSearchParams) => boolean;  // 表单校验钩子
+  channelLoginResponse?: { status: number; body: string };      // 覆盖 rest/login 响应（协议错误场景）
+  findCaptchaCountResponse?: { status: number; body: string };  // 覆盖 findCaptchaCount 响应
 }
 export interface CasRequest { method: string; url: string; headers: http.IncomingHttpHeaders; body: string }
 
@@ -562,6 +564,11 @@ export function createMockCas(opts: MockCasOpts = {}) {
         return;
       }
       if (u.pathname === "/cas/protected/rest/login" && req.method === "POST") {
+        if (opts.channelLoginResponse) {
+          res.statusCode = opts.channelLoginResponse.status;
+          res.end(opts.channelLoginResponse.body);
+          return;
+        }
         const body = JSON.parse(raw);
         const ok = body.username === "2023001" && body.password && body.timestamp && body.croypto;
         if (!ok) { res.end(JSON.stringify({ code: 400, message: "失败" })); return; }
@@ -579,6 +586,11 @@ export function createMockCas(opts: MockCasOpts = {}) {
         return;
       }
       if (u.pathname.startsWith("/cas/api/protected/user/findCaptchaCount/")) {
+        if (opts.findCaptchaCountResponse) {
+          res.statusCode = opts.findCaptchaCountResponse.status;
+          res.end(opts.findCaptchaCountResponse.body);
+          return;
+        }
         if (req.headers["csrf-key"] !== "FzgxPikIetYDlXZM4lRG9taclVDa99lB") {
           res.end(JSON.stringify({ code: 401, message: "Unauthorized" })); return;
         }
@@ -699,6 +711,33 @@ describe("CasClient", () => {
     const req = m.requests.find(q => q.url.includes("findCaptchaCount"))!;
     expect(req.headers["csrf-key"]).toBe("FzgxPikIetYDlXZM4lRG9taclVDa99lB");
   });
+
+  it("channel 登录协议错误(502 HTML): 抛 protocol", async () => {
+    const m = await startMock({ channelLoginResponse: { status: 502, body: "<html>Bad Gateway</html>" } });
+    const jar = new CookieJar();
+    const cas = new CasClient();
+    const page = await cas.fetchLoginPage(jar, `${m.url}/cas/login`);
+    await expect(cas.channelLogin(jar, page.url, "2023001", "mypassword"))
+      .rejects.toMatchObject({ kind: "protocol" });
+  });
+
+  it("channel 登录 HTTP 500 JSON: 抛 protocol 而非 bad-credentials", async () => {
+    const m = await startMock({ channelLoginResponse: { status: 500, body: '{"code":500}' } });
+    const jar = new CookieJar();
+    const cas = new CasClient();
+    const page = await cas.fetchLoginPage(jar, `${m.url}/cas/login`);
+    await expect(cas.channelLogin(jar, page.url, "2023001", "mypassword"))
+      .rejects.toMatchObject({ kind: "protocol" });
+  });
+
+  it("findCaptchaCount 非 JSON 响应: 抛 protocol", async () => {
+    const m = await startMock({ findCaptchaCountResponse: { status: 200, body: "<html>WAF</html>" } });
+    const jar = new CookieJar();
+    const cas = new CasClient();
+    const page = await cas.fetchLoginPage(jar, `${m.url}/cas/login`);
+    await expect(cas.findCaptchaCount(jar, page.url, "2023001"))
+      .rejects.toMatchObject({ kind: "protocol" });
+  });
 });
 ```
 
@@ -738,7 +777,11 @@ export class CasClient {
       jar,
       headers: { "Csrf-Key": CSRF_KEY, "Csrf-Value": CSRF_VALUE, Referer: loginPageUrl },
     });
-    const data = JSON.parse(r.body.toString("utf8")).data ?? {};
+    if (r.status !== 200) throw new CasError("protocol", String(r.status));
+    let parsed: any;
+    try { parsed = JSON.parse(r.body.toString("utf8")); }
+    catch { throw new CasError("protocol", String(r.status)); }
+    const data = parsed.data ?? {};
     return { captchaInvisible: !!data.captchaInvisible,
              captchaUrl: data.captchaUrl ?? null };
   }
@@ -761,7 +804,10 @@ export class CasClient {
       headers: { "Content-Type": "application/json", Referer: loginPageUrl },
       body: JSON.stringify({ username, password: enc, timestamp: ts, croypto: page.croypto }),
     });
-    const res = JSON.parse(r.body.toString("utf8"));
+    if (r.status !== 200) throw new CasError("protocol", String(r.status));
+    let res: any;
+    try { res = JSON.parse(r.body.toString("utf8")); }
+    catch { throw new CasError("protocol", String(r.status)); }
     if (res.data?.captchaInvisible) throw new CasError("captcha-required");
     if (res.code !== 200) throw new CasError("bad-credentials", String(res.code));
   }
