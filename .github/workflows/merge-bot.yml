@@ -1,0 +1,28 @@
+name: merge-bot
+
+# Free 计划私有仓库无原生 auto-merge, 用 check_run 事件等价实现:
+# CI 绿灯 + PR 带 automerge 标签 → 自动合并并删分支
+on:
+  check_run:
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    if: github.event.check_run.name == 'ci' && github.event.check_run.conclusion == 'success'
+    steps:
+      - name: 合并所有带 automerge 标签的绿灯 PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          SHA="${{ github.event.check_run.head_sha }}"
+          for pr in $(gh pr list --state open --label automerge \
+              --json number,headRefOid \
+              -q '.[] | select(.headRefOid == env.SHA) | .number'); do
+            echo "自动合并 PR #$pr"
+            gh pr merge "$pr" --merge --delete-branch
+          done

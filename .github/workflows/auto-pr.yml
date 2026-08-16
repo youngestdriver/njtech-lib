@@ -1,0 +1,32 @@
+name: auto-pr
+
+on:
+  push:
+    branches:
+      - "worktree-*"
+      - "feat/*"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  open-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 创建或复用 PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH="${{ github.ref_name }}"
+          EXISTING=$(gh pr list --head "$BRANCH" --state open --json url -q '.[0].url // empty')
+          if [ -n "$EXISTING" ]; then
+            echo "PR 已存在: $EXISTING"
+            exit 0
+          fi
+          gh pr create --base main --head "$BRANCH" \
+            --title "自动 PR: $BRANCH" \
+            --body "自动创建（push 触发）。CI 绿灯后由 merge-bot 自动合并。
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)" \
+            --label automerge

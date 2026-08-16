@@ -4,6 +4,7 @@
 # Node
 node_modules/
 dist/
+.npm-cache/
 
 # 运行时数据（含 SQLite 凭据库，严禁入库）
 server/data/
@@ -14,3 +15,6 @@ server/data/
 
 # 日志
 *.log
+
+# SDD 工作区（ledger/评审包等临时产物）
+.superpowers/
