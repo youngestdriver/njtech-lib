@@ -6,7 +6,7 @@
 
 ## 自动化流水线
 
-推送到 `worktree-*` / `feat/*` 分支 → 自动开 PR → CI（69 tests + tsc）→ 绿灯自动合并。
+推送到 `worktree-*` / `feat/*` 分支 → 自动开 PR（automerge 标签）→ CI（69 tests + tsc）→ 绿灯后 merge-bot 自动合并。
 
 ## 系统拓扑
 
