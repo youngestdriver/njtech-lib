@@ -3,6 +3,8 @@ import http from "node:http";
 export interface MockCasOpts {
   channelRequireCaptcha?: boolean;   // rest/login 响应要求验证码
   formAccept?: (body: URLSearchParams) => boolean;  // 表单校验钩子
+  channelLoginResponse?: { status: number; body: string };      // 覆盖 rest/login 响应（协议错误场景）
+  findCaptchaCountResponse?: { status: number; body: string };  // 覆盖 findCaptchaCount 响应
 }
 export interface CasRequest { method: string; url: string; headers: http.IncomingHttpHeaders; body: string }
 
@@ -29,6 +31,11 @@ export function createMockCas(opts: MockCasOpts = {}) {
         return;
       }
       if (u.pathname === "/cas/protected/rest/login" && req.method === "POST") {
+        if (opts.channelLoginResponse) {
+          res.statusCode = opts.channelLoginResponse.status;
+          res.end(opts.channelLoginResponse.body);
+          return;
+        }
         const body = JSON.parse(raw);
         const ok = body.username === "2023001" && body.password && body.timestamp && body.croypto;
         if (!ok) { res.end(JSON.stringify({ code: 400, message: "失败" })); return; }
@@ -46,6 +53,11 @@ export function createMockCas(opts: MockCasOpts = {}) {
         return;
       }
       if (u.pathname.startsWith("/cas/api/protected/user/findCaptchaCount/")) {
+        if (opts.findCaptchaCountResponse) {
+          res.statusCode = opts.findCaptchaCountResponse.status;
+          res.end(opts.findCaptchaCountResponse.body);
+          return;
+        }
         if (req.headers["csrf-key"] !== "FzgxPikIetYDlXZM4lRG9taclVDa99lB") {
           res.end(JSON.stringify({ code: 401, message: "Unauthorized" })); return;
         }

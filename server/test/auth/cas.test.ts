@@ -73,4 +73,31 @@ describe("CasClient", () => {
     const req = m.requests.find(q => q.url.includes("findCaptchaCount"))!;
     expect(req.headers["csrf-key"]).toBe("FzgxPikIetYDlXZM4lRG9taclVDa99lB");
   });
+
+  it("channel 登录协议错误(502 HTML): 抛 protocol", async () => {
+    const m = await startMock({ channelLoginResponse: { status: 502, body: "<html>Bad Gateway</html>" } });
+    const jar = new CookieJar();
+    const cas = new CasClient();
+    const page = await cas.fetchLoginPage(jar, `${m.url}/cas/login`);
+    await expect(cas.channelLogin(jar, page.url, "2023001", "mypassword"))
+      .rejects.toMatchObject({ kind: "protocol" });
+  });
+
+  it("channel 登录 HTTP 500 JSON: 抛 protocol 而非 bad-credentials", async () => {
+    const m = await startMock({ channelLoginResponse: { status: 500, body: '{"code":500}' } });
+    const jar = new CookieJar();
+    const cas = new CasClient();
+    const page = await cas.fetchLoginPage(jar, `${m.url}/cas/login`);
+    await expect(cas.channelLogin(jar, page.url, "2023001", "mypassword"))
+      .rejects.toMatchObject({ kind: "protocol" });
+  });
+
+  it("findCaptchaCount 非 JSON 响应: 抛 protocol", async () => {
+    const m = await startMock({ findCaptchaCountResponse: { status: 200, body: "<html>WAF</html>" } });
+    const jar = new CookieJar();
+    const cas = new CasClient();
+    const page = await cas.fetchLoginPage(jar, `${m.url}/cas/login`);
+    await expect(cas.findCaptchaCount(jar, page.url, "2023001"))
+      .rejects.toMatchObject({ kind: "protocol" });
+  });
 });

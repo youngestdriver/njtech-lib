@@ -30,7 +30,11 @@ export class CasClient {
       jar,
       headers: { "Csrf-Key": CSRF_KEY, "Csrf-Value": CSRF_VALUE, Referer: loginPageUrl },
     });
-    const data = JSON.parse(r.body.toString("utf8")).data ?? {};
+    if (r.status !== 200) throw new CasError("protocol", String(r.status));
+    let parsed: any;
+    try { parsed = JSON.parse(r.body.toString("utf8")); }
+    catch { throw new CasError("protocol", String(r.status)); }
+    const data = parsed.data ?? {};
     return { captchaInvisible: !!data.captchaInvisible,
              captchaUrl: data.captchaUrl ?? null };
   }
@@ -53,7 +57,10 @@ export class CasClient {
       headers: { "Content-Type": "application/json", Referer: loginPageUrl },
       body: JSON.stringify({ username, password: enc, timestamp: ts, croypto: page.croypto }),
     });
-    const res = JSON.parse(r.body.toString("utf8"));
+    if (r.status !== 200) throw new CasError("protocol", String(r.status));
+    let res: any;
+    try { res = JSON.parse(r.body.toString("utf8")); }
+    catch { throw new CasError("protocol", String(r.status)); }
     if (res.data?.captchaInvisible) throw new CasError("captcha-required");
     if (res.code !== 200) throw new CasError("bad-credentials", String(res.code));
   }
