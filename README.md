@@ -1,5 +1,7 @@
 # njtech-lib — 南工大图书馆登录体系全解
 
+[![ci](https://github.com/youngestdriver/njtech-lib/actions/workflows/ci.yml/badge.svg)](https://github.com/youngestdriver/njtech-lib/actions/workflows/ci.yml)
+
 本目录完整记录 2026-08-14/15 会话探索到的**全部登录体系知识**。任何新会话只读本目录即可完全理解并复现整个登录流程，无需原始对话上下文。
 
 ## 系统拓扑
