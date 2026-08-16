@@ -19,7 +19,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          SHA="${{ github.event.check_run.head_sha }}"
+          export SHA="${{ github.event.check_run.head_sha }}"
           for pr in $(gh pr list --state open --label automerge \
               --json number,headRefOid \
               -q '.[] | select(.headRefOid == env.SHA) | .number'); do
