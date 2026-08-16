@@ -317,6 +317,10 @@ function startMock() {
       res.writeHead(302, { Location: "/final", "Set-Cookie": "a=1; Path=/" });
       res.end(); return;
     }
+    if (req.url === "/multi-cookie") {
+      res.writeHead(200, { "Set-Cookie": ["TGC=t1; Path=/", "SESSION=s1; Path=/"] });
+      res.end(); return;
+    }
     res.writeHead(200, { "Content-Type": "text/plain" });
     res.end(JSON.stringify({ url: req.url, referer: req.headers.referer ?? null,
                             cookie: req.headers.cookie ?? null }));
@@ -344,6 +348,14 @@ describe("request", () => {
     expect(r2.headers.get("set-cookie")).toContain("a=1");
     const r3 = await request(`${base}/final`, { jar });
     expect(JSON.parse(r3.body.toString()).cookie).toBe("a=1");
+  });
+  it("多 Set-Cookie 响应全部写回 jar（CAS 一个响应发 TGC+SESSION）", async () => {
+    const jar = new CookieJar();
+    await request(`${base}/multi-cookie`, { jar });
+    const r = await request(`${base}/final`, { jar });
+    const cookie = JSON.parse(r.body.toString()).cookie;
+    expect(cookie).toContain("TGC=t1");
+    expect(cookie).toContain("SESSION=s1");
   });
 });
 ```
@@ -379,7 +391,8 @@ export async function request(url: string, opts: RequestOpts = {}): Promise<Http
     signal: AbortSignal.timeout(opts.timeoutMs ?? 30_000),
   });
   const body = Buffer.from(await res.arrayBuffer());
-  opts.jar?.set(res.headers.get("set-cookie"), url);
+  // 多 Set-Cookie 必须用 getSetCookie()（Headers.get 会把多值用 ", " 合并, jar 解析会丢第一个之外的 cookie）
+  for (const sc of res.headers.getSetCookie()) opts.jar?.set(sc, url);
   return { status: res.status, headers: res.headers, body };
 }
 ```
