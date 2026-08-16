@@ -2136,6 +2136,25 @@ describe("KeepaliveScheduler", () => {
     await vi.advanceTimersByTimeAsync(60_000);   // t3 (2 倍间隔): 再探测成功
     expect(calls.probe).toEqual([1, 1]);
   });
+
+  it("重复 start 幂等; probe 抛错不中断整轮且该账号退避", async () => {
+    vi.useFakeTimers();
+    const pool = {
+      list: vi.fn(async () => [{ id: 1, status: "active" }, { id: 2, status: "active" }]),
+      probe: vi.fn(async (id: number) => { if (id === 1) throw new Error("boom"); return true; }),
+      reauth: vi.fn(async () => {}),
+    };
+    const s = new KeepaliveScheduler(pool as any, 60_000);
+    s.start();
+    s.start();   // 幂等: 第二个 start 不得泄漏第二个 interval
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(pool.probe).toHaveBeenCalledTimes(2);   // 账号1抛错后账号2仍被探测; 若 timer 泄漏会翻倍
+    await vi.advanceTimersByTimeAsync(60_000);     // 账号2 正常周期再探测; 账号1 在 2× 退避中
+    expect(pool.probe).toHaveBeenCalledTimes(3);
+    s.stop();
+    await vi.advanceTimersByTimeAsync(120_000);
+    expect(pool.probe).toHaveBeenCalledTimes(3);   // stop 后不再触发
+  });
 });
 ```
 
@@ -2157,7 +2176,11 @@ export class KeepaliveScheduler {
   constructor(private pool: PoolLike, private intervalMs = 600_000) {}
 
   start(): void {
-    this.timer = setInterval(() => { void this.tickOnce(); }, this.intervalMs);
+    if (this.timer !== null) return;   // 幂等: 重复 start 不得泄漏 interval
+    this.timer = setInterval(() => {
+      // 上游抛错不能变成 unhandled rejection 杀掉进程（保活器本职就是应对上游不稳）
+      void this.tickOnce().catch(() => {});
+    }, this.intervalMs);
   }
 
   stop(): void {
@@ -2171,16 +2194,20 @@ export class KeepaliveScheduler {
     for (const a of accounts) {
       if (a.status !== "active") continue;
       if (now < (this.nextAt.get(a.id) ?? 0)) continue;
-      const ok = await this.pool.probe(a.id);
-      if (!ok) {
+      try {
+        const ok = await this.pool.probe(a.id);
+        if (ok) {
+          this.backoff.set(a.id, 1);
+          this.nextAt.set(a.id, now + this.intervalMs);
+          continue;
+        }
         await this.pool.reauth(a.id);
-        const mult = Math.min((this.backoff.get(a.id) ?? 1) * 2, 4);
-        this.backoff.set(a.id, mult);
-        this.nextAt.set(a.id, now + this.intervalMs * mult);
-      } else {
-        this.backoff.set(a.id, 1);
-        this.nextAt.set(a.id, now + this.intervalMs);
+      } catch {
+        // probe/reauth 抛错同样走退避, 且不中断整轮其它账号
       }
+      const mult = Math.min((this.backoff.get(a.id) ?? 1) * 2, 4);
+      this.backoff.set(a.id, mult);
+      this.nextAt.set(a.id, now + this.intervalMs * mult);
     }
   }
 }
