@@ -113,6 +113,9 @@ export class SeatGraphql {
 
   async currentReserve(jar: CookieJar): Promise<{ reserve: ReserveInfo | null; getSToken: string | null }> {
     const res = await this.raw(jar, "curReserve", Q_CURRENT, {});
+    // 会话失效/上游故障必须抛错（"无预约"与"没登录"语义不同，保活探测依赖此区分）
+    if (res.errors) throw new SeatError(
+      res.errors[0]?.extensions?.code, res.errors[0]?.message ?? "查询当前预约失败");
     const r = res.data?.userAuth?.reserve?.reserve ?? null;
     return {
       reserve: r ? {

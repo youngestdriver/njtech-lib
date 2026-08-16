@@ -4,6 +4,7 @@ import { SeatGraphql, SeatError } from "../../src/seat/graphql.js";
 import { CookieJar } from "../../src/http/cookiejar.js";
 
 let server: http.Server; let base = ""; const got: any[] = [];
+let curReserveError = false;   // 测试开关: curReserve 返回 errors（模拟会话失效）
 beforeAll(() => new Promise<void>(r => {
   server = http.createServer((req, res) => {
     let raw = "";
@@ -17,8 +18,24 @@ beforeAll(() => new Promise<void>(r => {
         return;
       }
       if (op === "reserueSeat") { res.end(JSON.stringify({ data: { userAuth: { reserve: { reserueSeat: true } } } })); return; }
+      if (op === "curReserve" && curReserveError) {
+        res.end(JSON.stringify({ errors: [{ message: "session expired", extensions: { code: 401 } }] }));
+        return;
+      }
       if (op === "curReserve") {
         res.end(JSON.stringify({ data: { userAuth: { reserve: { reserve: null, getSToken: "st-1" } } } }));
+        return;
+      }
+      if (op === "libLayout") {
+        res.end(JSON.stringify({ data: { userAuth: { reserve: { libs: [{ lib_id: 122811, lib_name: "新书借阅室", lib_layout: { seats: [] } }] } } } }));
+        return;
+      }
+      if (op === "reserveCancle") {
+        res.end(JSON.stringify({ data: { userAuth: { reserve: { reserveCancle: { timerange: 1 } } } } }));
+        return;
+      }
+      if (op === "captcha") {
+        res.end(JSON.stringify({ data: { captcha: { code: "c1", data: "img" } } }));
         return;
       }
       res.end(JSON.stringify({ data: {} }));
@@ -53,5 +70,26 @@ describe("SeatGraphql", () => {
     await gql().currentReserve(jar);
     const reqs = got.length;   // referer 断言在 mock 里太绕, 此处断言查询语句含 userAuth
     expect(got[got.length - 1].query).toContain("userAuth");
+  });
+
+  it("layout 返回 libs[0]", async () => {
+    const r = await gql().layout(jar, 122811);
+    expect(r.lib_id).toBe(122811);
+  });
+
+  it("cancel 成功不抛错", async () => {
+    await expect(gql().cancel(jar, "st-1")).resolves.toBeUndefined();
+  });
+
+  it("reserveCaptcha 返回顶层 captcha 字段", async () => {
+    const r = await gql().reserveCaptcha(jar);
+    expect(r).toEqual({ code: "c1", imageData: "img" });
+  });
+
+  it("currentReserve 遇 GraphQL errors 抛 SeatError（会话失效 ≠ 无预约）", async () => {
+    curReserveError = true;
+    await expect(gql().currentReserve(jar))
+      .rejects.toMatchObject({ message: "session expired" });
+    curReserveError = false;
   });
 });
