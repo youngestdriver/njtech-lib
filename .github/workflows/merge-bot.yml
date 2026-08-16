@@ -20,9 +20,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           export SHA="${{ github.event.check_run.head_sha }}"
-          for pr in $(gh pr list --state open --label automerge \
+          for pr in $(gh pr list -R "${{ github.repository }}" --state open --label automerge \
               --json number,headRefOid \
               -q '.[] | select(.headRefOid == env.SHA) | .number'); do
             echo "自动合并 PR #$pr"
-            gh pr merge "$pr" --merge --delete-branch
+            gh pr merge -R "${{ github.repository }}" "$pr" --merge --delete-branch
           done
