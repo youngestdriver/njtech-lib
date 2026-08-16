@@ -131,6 +131,12 @@ describe("loadConfig", () => {
     expect(c.dbPath).toBe("server/data/app.db");
     expect(c.tokenTtlSec).toBe(7 * 24 * 3600);
   });
+  it("非法数值 env 抛错（防止 NaN 保活间隔→1ms 打对方服务器）", () => {
+    expect(() => loadConfig({ ...BASE, NJ_SEAT_PORT: "abc" }))
+      .toThrow(/NJ_SEAT_PORT/);
+    expect(() => loadConfig({ ...BASE, NJ_SEAT_KEEPALIVE_MS: "abc" }))
+      .toThrow(/NJ_SEAT_KEEPALIVE_MS/);
+  });
 });
 ```
 
@@ -159,13 +165,20 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const accessPassword = env.NJ_SEAT_ACCESS_PASSWORD;
   if (!accessPassword) throw new Error("缺少 NJ_SEAT_ACCESS_PASSWORD");
   return {
-    port: Number(env.NJ_SEAT_PORT ?? 8791),
+    port: parseNum(env.NJ_SEAT_PORT, 8791, "NJ_SEAT_PORT"),
     dbPath: env.NJ_SEAT_DB ?? "server/data/app.db",
     masterKey: Buffer.from(keyHex, "hex"),
     accessPassword,
-    keepaliveIntervalMs: Number(env.NJ_SEAT_KEEPALIVE_MS ?? 600_000),
+    keepaliveIntervalMs: parseNum(env.NJ_SEAT_KEEPALIVE_MS, 600_000, "NJ_SEAT_KEEPALIVE_MS"),
     tokenTtlSec: 7 * 24 * 3600,
   };
+}
+
+/** 数值 env 解析：非法/非正数抛错（NaN 保活间隔会让 setInterval 以 1ms 打对方服务器） */
+function parseNum(raw: string | undefined, def: number, name: string): number {
+  const n = Number(raw ?? def);
+  if (!Number.isFinite(n) || n <= 0) throw new Error(`${name} 必须是正数`);
+  return n;
 }
 ```
 
