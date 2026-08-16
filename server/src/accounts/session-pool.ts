@@ -20,11 +20,16 @@ export class SessionPool {
   private locker = new Locker();
 
   constructor(private store: AccountStore, private cas: CasClient,
-              private sm: SeatStateMachine, private gql: SeatGraphql) {}
+              private sm: SeatStateMachine, private gql: SeatGraphql,
+              private retryDelays: number[] = RETRY_DELAYS) {}
 
   async addAccount(username: string, password: string, alias?: string): Promise<AccountRow & SessionInfo> {
     const row = this.store.add(username, password, alias);
-    await this.login(row.id, password);
+    try {
+      await this.login(row.id, password);
+    } catch (e) {
+      this.store.setStatus(row.id, "failed", (e as Error).message);  // 新账号首登失败 = 终态 failed
+    }
     return this.info(row.id);
   }
 
@@ -49,15 +54,19 @@ export class SessionPool {
     return j;
   }
 
-  /** 完整登录链: seat①-④ → CAS channel → seat⑤-⑥; 失败退避与状态落库。
-   *  每次尝试用全新 jar: 重登必须重走 channel 链, 残留 TGC 会触发 CAS SSO 直通
-   *  （toCasLoginPage 直接落到应用页, channelLogin 无登录页可解析 → 协议错误）。 */
+  /** 完整登录链: seat①-④ → CAS channel → seat⑤-⑥.
+   * 错误分级(全局约束): captcha-required → needs-captcha; bad-credentials 不重试;
+   * 其余协议错误全链重走 ≤2 次; 网络错误退避 retryDelays(1s/2s/4s) 封顶 3 次.
+   * 每次尝试用全新 jar（残留 TGC 会触发 CAS SSO 直通, 登录表单永不出现）.
+   * 失败抛错, 状态由调用方(addAccount/reauth)决定. */
   private async login(id: number, password: string): Promise<void> {
     const username = this.store.list().find(a => a.id === id)!.username;
     let lastErr: Error | null = null;
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const jar = new CookieJar();
-      this.jars.set(id, jar);
+    let protocolAttempts = 0;
+    let networkAttempts = 0;
+    while (protocolAttempts < 2 && networkAttempts < 3) {
+      this.jars.set(id, new CookieJar());   // 全新 jar
+      const jar = this.jars.get(id)!;
       try {
         const u5 = await this.sm.start(jar);
         const page = await this.sm.toCasLoginPage(jar, u5);
@@ -72,10 +81,18 @@ export class SessionPool {
           this.store.setStatus(id, "needs-captcha", "CAS 要求验证码，请手动处理");
           return;
         }
-        await sleep(RETRY_DELAYS[Math.min(attempt, RETRY_DELAYS.length - 1)]);
+        if (e instanceof CasError && e.kind === "bad-credentials") {
+          break;   // 密码不会变, 重试无意义且有风控风险
+        }
+        if (e instanceof CasError) {
+          protocolAttempts++;
+        } else {
+          await sleep(this.retryDelays[Math.min(networkAttempts, this.retryDelays.length - 1)]);
+          networkAttempts++;
+        }
       }
     }
-    this.store.setStatus(id, "failed", lastErr?.message ?? "登录失败");
+    throw lastErr ?? new Error("登录失败");
   }
 
   private async ensureSession(id: number): Promise<CookieJar> {
@@ -100,14 +117,20 @@ export class SessionPool {
     });
   }
 
+  /** 重登: 失败 1-2 次保持 active(可继续重试), 第 3 次 → failed（全局约束） */
   async reauth(id: number): Promise<void> {
     return this.locker.withLock(`acct:${id}`, async () => {
-      const password = this.store.getPassword(id);
-      await this.login(id, password);
-      if (this.store.list().find(a => a.id === id)!.status === "failed") {
+      try {
+        const password = this.store.getPassword(id);
+        await this.login(id, password);
+      } catch (e) {
         const streak = (this.failStreak.get(id) ?? 0) + 1;
         this.failStreak.set(id, streak);
-        if (streak >= 3) this.store.setStatus(id, "failed", "连续 3 次重登失败");
+        if (streak >= 3) {
+          this.store.setStatus(id, "failed", "连续 3 次重登失败");
+        } else {
+          this.store.setStatus(id, "active", `重登失败(${streak}/3): ${(e as Error).message}`);
+        }
       }
     });
   }

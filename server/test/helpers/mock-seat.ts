@@ -5,15 +5,18 @@ import http from "node:http";
 // service 指向本 mock 自身（用请求 Host 推导），保证 ticket 回程（⑥）落在 mock 上。
 export interface SeatRequest { method: string; url: string; referer: string | undefined; body: string }
 
-export interface MockSeatOpts {
-  graphql?: {
-    reserve?: any;               // curReserve 返回的 reserve 数据（默认 null = 无预约）
-    getSToken?: string | null;   // curReserve 返回的 getSToken（默认 null）
-  };
+// GraphQL 端点配置（对象引用挂在返回值 .graphql 上, 创建后可改即时生效）
+export interface SeatGraphqlOpts {
+  reserve?: any;                          // curReserve 的 reserve 值（默认 null = 无预约）
+  getSToken?: string | null;              // curReserve 的 getSToken（默认 "st-1"）
+  reserveError?: { code: number; message: string };  // reserueSeat 返回 errors（如 code 1000 需验证码）
+  keepReserveAfterCancel?: boolean;       // true: reserveCancle 后 curReserve 仍返回 reserve
+  captcha?: { code: string; data: string };  // captcha 查询返回值
 }
 
-export function createMockSeat(u5Base: string, opts: MockSeatOpts = {}) {
+export function createMockSeat(u5Base: string, graphqlOpts: SeatGraphqlOpts = {}) {
   const requests: SeatRequest[] = [];
+  let cancelled = false;   // reserveCancle 已调用 → curReserve 复查为空（除非 keepReserveAfterCancel）
   const server = http.createServer((req, res) => {
     let raw = "";
     req.on("data", c => raw += c);
@@ -33,22 +36,31 @@ export function createMockSeat(u5Base: string, opts: MockSeatOpts = {}) {
         const op = body.operationName as string;
         res.setHeader("Content-Type", "application/json");
         if (op === "curReserve") {
+          const reserve = cancelled && !graphqlOpts.keepReserveAfterCancel
+            ? null : (graphqlOpts.reserve ?? null);
           res.end(JSON.stringify({ data: { userAuth: { reserve: {
-            reserve: opts.graphql?.reserve ?? null,
-            getSToken: opts.graphql?.getSToken ?? null,
+            reserve,
+            getSToken: graphqlOpts.getSToken ?? "st-1",
           } } } }));
           return;
         }
         if (op === "reserueSeat") {
-          res.end(JSON.stringify({ data: { userAuth: { reserve: { reserueSeat: true } } } }));
+          if (graphqlOpts.reserveError) {
+            res.end(JSON.stringify({ errors: [{ message: graphqlOpts.reserveError.message,
+              extensions: { code: graphqlOpts.reserveError.code } }] }));
+          } else {
+            res.end(JSON.stringify({ data: { userAuth: { reserve: { reserueSeat: true } } } }));
+          }
           return;
         }
         if (op === "reserveCancle") {
+          cancelled = true;
           res.end(JSON.stringify({ data: { userAuth: { reserve: { reserveCancle: { timerange: 1 } } } } }));
           return;
         }
         if (op === "captcha") {
-          res.end(JSON.stringify({ data: { captcha: { code: "c1", data: "img" } } }));
+          const cap = graphqlOpts.captcha ?? { code: "cap-token", data: "img-b64" };
+          res.end(JSON.stringify({ data: { captcha: cap } }));
           return;
         }
         res.end(JSON.stringify({ data: {} }));
@@ -88,12 +100,12 @@ export function createMockSeat(u5Base: string, opts: MockSeatOpts = {}) {
       send(404);
     });
   });
-  return new Promise<{ port: number; url: string; requests: SeatRequest[]; opts: MockSeatOpts }>((resolve) => {
+  return new Promise<{ port: number; url: string; requests: SeatRequest[]; graphql: SeatGraphqlOpts }>((resolve) => {
     server.listen(0, "127.0.0.1", () => resolve({
       port: (server.address() as any).port,
       url: `http://127.0.0.1:${(server.address() as any).port}`,
       requests,
-      opts,
+      graphql: graphqlOpts,   // 对象引用: 测试改 graphql.reserve 等即时生效
     }));
   });
 }
