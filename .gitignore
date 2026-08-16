@@ -14,3 +14,6 @@ server/data/
 
 # 日志
 *.log
+
+# SDD 工作区（ledger/评审包等临时产物）
+.superpowers/

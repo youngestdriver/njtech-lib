@@ -522,6 +522,13 @@ export function createMockCas(opts: MockCasOpts = {}) {
       requests.push({ method: req.method!, url: req.url!, headers: req.headers, body: raw });
       const u = new URL(req.url!, "https://sfgl.njtech.edu.cn");
       if (u.pathname === "/cas/login" && req.method === "GET") {
+        // ★TGC 感知（2026-08-16 预检修正）: 带 SOURCEID_TGC 直接 302 发 ST（SSO 免登录）
+        if ((req.headers.cookie ?? "").includes("SOURCEID_TGC")) {
+          const service = u.searchParams.get("service");
+          res.writeHead(302, { Location: `${service}&ticket=ST-cas-1` });
+          res.end();
+          return;
+        }
         res.setHeader("Set-Cookie", "SESSION=cas-session; Path=/cas/");
         res.setHeader("Content-Type", "text/html");
         res.end('<html><p id="login-croypto">MTIzNDU2Nzg=</p>' +
@@ -977,11 +984,11 @@ export class SeatStateMachine {
 
   /** ⑤(带TGC)→⑥: 跟随直到落在 /web/index.html 200 */
   async completeLogin(jar: CookieJar, u5: string): Promise<void> {
-    let cur = u5, hops = 0;
+    let cur = u5, ref = u5, hops = 0;
     while (hops++ < 10) {
-      const h = await this.hop(jar, cur, cur === u5 ? u5 : cur);
+      const h = await this.hop(jar, cur, ref);
       if (h.status >= 300 && h.status < 400 && h.location) {
-        cur = new URL(h.location, cur).toString();
+        ref = cur; cur = new URL(h.location, cur).toString();
         continue;
       }
       if (h.status === 200 && new URL(cur).pathname === "/web/index.html") return;
@@ -1560,6 +1567,7 @@ git commit -m "feat(server): 账号存储（SQLite + AES-256-GCM 凭据）"
 **Files:**
 - Create: `server/src/accounts/locker.ts`
 - Create: `server/src/accounts/session-pool.ts`
+- Modify: `server/test/helpers/mock-seat.ts`（增加 GraphQL 端点：`/index.php/graphql/` POST 按 operationName 返回可配置数据）
 - Test: `server/test/accounts/session-pool.test.ts`
 
 **Interfaces:**
