@@ -43,6 +43,13 @@ export function buildApp(opts: { pool: SessionPool; store: AccountStore; config:
     return { ok: true };
   });
 
+  app.post("/api/accounts/:id/login-captcha", async (req) => {
+    const { captchaCode } = (req.body ?? {}) as { captchaCode?: string };
+    if (!captchaCode) throw Object.assign(new Error("缺少 captchaCode"), { statusCode: 400 });
+    await pool.completeCasLoginWithCaptcha(Number((req.params as any).id), captchaCode);
+    return { ok: true };
+  });
+
   app.get("/api/accounts/:id/current", async (req) =>
     pool.current(Number((req.params as any).id)));
 

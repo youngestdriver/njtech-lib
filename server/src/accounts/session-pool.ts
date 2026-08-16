@@ -191,4 +191,27 @@ export class SessionPool {
       }
     });
   }
+
+  /** needs-captcha 恢复: 经典表单登录(带验证码) → TGC 入 jar → 全链收尾。
+   * formLogin 成功后 jar 里有新 TGC, completeLogin 的 SSO 直通会自动走完 ticket 链。 */
+  async completeCasLoginWithCaptcha(id: number, captchaCode: string): Promise<void> {
+    return this.locker.withLock(`acct:${id}`, async () => {
+      const row = this.store.list().find(a => a.id === id);
+      if (!row) throw new Error("账号不存在");
+      const jar = new CookieJar();
+      this.jars.set(id, jar);
+      try {
+        const u5 = await this.sm.start(jar);
+        const page = await this.sm.toCasLoginPage(jar, u5);
+        await this.cas.formLogin(jar, page.url, row.username,
+                                 this.store.getPassword(id), captchaCode);
+        await this.sm.completeLogin(jar, u5);
+        this.store.setStatus(id, "active");
+        this.failStreak.set(id, 0);
+      } catch (e) {
+        this.store.setStatus(id, "needs-captcha", `验证码登录失败: ${(e as Error).message}`);
+        throw e;
+      }
+    });
+  }
 }

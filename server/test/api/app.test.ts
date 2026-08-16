@@ -18,6 +18,7 @@ function fakePool() {
     reserveWithCaptcha: async () => ({ ok: true }),
     cancel: async () => ({ ok: true }),
     reauth: async () => {},
+    completeCasLoginWithCaptcha: async () => {},
     remove: async () => {},
   };
 }
@@ -64,6 +65,17 @@ describe("API", () => {
       headers: { authorization: `Bearer ${token}` } });
     expect(r.statusCode).toBe(200);
     expect(r.json().libName).toBe("新书借阅室");
+  });
+  it("login-captcha 路由透传 pool 并校验 captchaCode", async () => {
+    const app = buildApp({ pool: fakePool() as any, store, config });
+    const token = signToken(config.accessPassword, config.tokenTtlSec);
+    const bad = await app.inject({ method: "POST", url: "/api/accounts/1/login-captcha",
+      headers: { authorization: `Bearer ${token}` }, payload: {} });
+    expect(bad.statusCode).toBe(400);
+    const ok = await app.inject({ method: "POST", url: "/api/accounts/1/login-captcha",
+      headers: { authorization: `Bearer ${token}` }, payload: { captchaCode: "pk3x" } });
+    expect(ok.statusCode).toBe(200);
+    expect(ok.json()).toEqual({ ok: true });
   });
   it("/healthz 免鉴权", async () => {
     const app = buildApp({ pool: fakePool() as any, store, config });

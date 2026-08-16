@@ -125,4 +125,13 @@ describe("SessionPool", () => {
     expect((await pool.list()).find(x => x.id === a.id)!.status).toBe("failed");
     casMock.opts.channelLoginResponse = undefined;
   });
+
+  it("needs-captcha 账号经 completeCasLoginWithCaptcha 恢复 active", async () => {
+    casMock.opts.channelRequireCaptcha = true;
+    const a = await pool.addAccount("2023001", "mypassword");
+    expect(a.status).toBe("needs-captcha");
+    casMock.opts.channelRequireCaptcha = false;
+    await pool.completeCasLoginWithCaptcha(a.id, "pk3x");
+    expect((await pool.list()).find(x => x.id === a.id)!.status).toBe("active");
+  });
 });
