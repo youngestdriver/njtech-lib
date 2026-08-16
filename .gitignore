@@ -4,6 +4,7 @@
 # Node
 node_modules/
 dist/
+.npm-cache/
 
 # 运行时数据（含 SQLite 凭据库，严禁入库）
 server/data/
