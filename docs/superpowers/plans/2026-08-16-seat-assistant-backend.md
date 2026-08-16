@@ -1705,6 +1705,8 @@ export class SessionPool {
   async cancel(accountId: number): Promise<{ ok: true } | { ok: false; message: string }>
   async probe(accountId: number): Promise<boolean>
   async reauth(accountId: number): Promise<void>   // channel 重登; captcha-required → needs-captcha; 连续 3 次失败 → failed
+  async completeCasLoginWithCaptcha(accountId: number, captchaCode: string): Promise<void>
+    // needs-captcha 恢复: 经典表单登录(带验证码) → TGC → 全链收尾; 失败保持 needs-captcha 并抛错
 }
 ```
 登录流程（`ensureSession`，内部）：`sm.start` → `sm.toCasLoginPage` → `cas.channelLogin`（失败抛 captcha-required 时降级 needs-captcha）→ `sm.completeLogin`；协议错误整体重走最多 2 次；网络错误退避 1s/2s/4s。
@@ -1851,6 +1853,15 @@ describe("SessionPool", () => {
     await pool.reauth(a.id);
     expect((await pool.list()).find(x => x.id === a.id)!.status).toBe("failed");
     casMock.opts.channelLoginResponse = undefined;
+  });
+
+  it("needs-captcha 账号经 completeCasLoginWithCaptcha 恢复 active", async () => {
+    casMock.opts.channelRequireCaptcha = true;
+    const a = await pool.addAccount("2023001", "mypassword");
+    expect(a.status).toBe("needs-captcha");
+    casMock.opts.channelRequireCaptcha = false;
+    await pool.completeCasLoginWithCaptcha(a.id, "pk3x");
+    expect((await pool.list()).find(x => x.id === a.id)!.status).toBe("active");
   });
 });
 ```
@@ -2053,6 +2064,29 @@ export class SessionPool {
       }
     });
   }
+
+  /** needs-captcha 恢复: 经典表单登录(带验证码) → TGC 入 jar → 全链收尾。
+   * formLogin 成功后 jar 里有新 TGC, completeLogin 的 SSO 直通会自动走完 ticket 链。 */
+  async completeCasLoginWithCaptcha(id: number, captchaCode: string): Promise<void> {
+    return this.locker.withLock(`acct:${id}`, async () => {
+      const row = this.store.list().find(a => a.id === id);
+      if (!row) throw new Error("账号不存在");
+      const jar = new CookieJar();
+      this.jars.set(id, jar);
+      try {
+        const u5 = await this.sm.start(jar);
+        const page = await this.sm.toCasLoginPage(jar, u5);
+        await this.cas.formLogin(jar, page.url, row.username,
+                                 this.store.getPassword(id), captchaCode);
+        await this.sm.completeLogin(jar, u5);
+        this.store.setStatus(id, "active");
+        this.failStreak.set(id, 0);
+      } catch (e) {
+        this.store.setStatus(id, "needs-captcha", `验证码登录失败: ${(e as Error).message}`);
+        throw e;
+      }
+    });
+  }
 }
 ```
 实现注意：测试里 `casMock.requireCaptcha` 开关需要在 `createMockCas` 的 `channelRequireCaptcha` 上暴露可变 setter（当前工厂参数为构造时值——将 `opts` 对象引用保存在 mock 返回值上，修改 `mock.opts.channelRequireCaptcha` 即生效）。
@@ -2246,7 +2280,8 @@ export function buildApp(opts: { pool: SessionPool; store: AccountStore; config:
 - `GET /api/accounts` → `AccountRow & SessionInfo[]`（脱敏，无密码字段）
 - `POST /api/accounts` `{username, password, alias?}` → 新账号
 - `DELETE /api/accounts/:id`
-- `POST /api/accounts/:id/reauth` → `{status}`
+- `POST /api/accounts/:id/reauth` → `{ok: true}`（前端随后重新拉取 GET /api/accounts 获取最新状态）
+- `POST /api/accounts/:id/login-captcha` `{captchaCode}` → `{ok: true}`（needs-captcha 账号手动验证码恢复）
 - `GET /api/accounts/:id/current` → 当前预约
 - `GET /api/seats/libraries` → `{libs}`（GraphQL list 语句，见实现）
 - `GET /api/seats/libraries/:libId/layout?accountId=` → SeatMapDto
@@ -2278,6 +2313,7 @@ function fakePool() {
     reserveWithCaptcha: async () => ({ ok: true }),
     cancel: async () => ({ ok: true }),
     reauth: async () => {},
+    completeCasLoginWithCaptcha: async () => {},
     remove: async () => {},
   };
 }
@@ -2329,6 +2365,17 @@ describe("API", () => {
     const app = buildApp({ pool: fakePool() as any, store, config });
     const r = await app.inject({ method: "GET", url: "/healthz" });
     expect(r.statusCode).toBe(200);
+  });
+  it("login-captcha 路由透传 pool 并校验 captchaCode", async () => {
+    const app = buildApp({ pool: fakePool() as any, store, config });
+    const token = signToken(config.accessPassword, config.tokenTtlSec);
+    const bad = await app.inject({ method: "POST", url: "/api/accounts/1/login-captcha",
+      headers: { authorization: `Bearer ${token}` }, payload: {} });
+    expect(bad.statusCode).toBe(400);
+    const ok = await app.inject({ method: "POST", url: "/api/accounts/1/login-captcha",
+      headers: { authorization: `Bearer ${token}` }, payload: { captchaCode: "pk3x" } });
+    expect(ok.statusCode).toBe(200);
+    expect(ok.json()).toEqual({ ok: true });
   });
 });
 ```
@@ -2404,6 +2451,13 @@ export function buildApp(opts: { pool: SessionPool; store: AccountStore; config:
 
   app.post("/api/accounts/:id/reauth", async (req) => {
     await pool.reauth(Number((req.params as any).id));
+    return { ok: true };
+  });
+
+  app.post("/api/accounts/:id/login-captcha", async (req) => {
+    const { captchaCode } = (req.body ?? {}) as { captchaCode?: string };
+    if (!captchaCode) throw Object.assign(new Error("缺少 captchaCode"), { statusCode: 400 });
+    await pool.completeCasLoginWithCaptcha(Number((req.params as any).id), captchaCode);
     return { ok: true };
   });
 
