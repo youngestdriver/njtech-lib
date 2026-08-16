@@ -50,4 +50,23 @@ describe("KeepaliveScheduler", () => {
     await vi.advanceTimersByTimeAsync(60_000);   // t3 (2 倍间隔): 再探测成功
     expect(calls.probe).toEqual([1, 1]);
   });
+
+  it("重复 start 幂等; probe 抛错不中断整轮且该账号退避", async () => {
+    vi.useFakeTimers();
+    const pool = {
+      list: vi.fn(async () => [{ id: 1, status: "active" }, { id: 2, status: "active" }]),
+      probe: vi.fn(async (id: number) => { if (id === 1) throw new Error("boom"); return true; }),
+      reauth: vi.fn(async () => {}),
+    };
+    const s = new KeepaliveScheduler(pool as any, 60_000);
+    s.start();
+    s.start();   // 幂等: 第二个 start 不得泄漏第二个 interval
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(pool.probe).toHaveBeenCalledTimes(2);   // 账号1抛错后账号2仍被探测; 若 timer 泄漏会翻倍
+    await vi.advanceTimersByTimeAsync(60_000);     // 账号2 正常周期再探测; 账号1 在 2× 退避中
+    expect(pool.probe).toHaveBeenCalledTimes(3);
+    s.stop();
+    await vi.advanceTimersByTimeAsync(120_000);
+    expect(pool.probe).toHaveBeenCalledTimes(3);   // stop 后不再触发
+  });
 });
