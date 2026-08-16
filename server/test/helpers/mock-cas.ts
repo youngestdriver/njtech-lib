@@ -89,11 +89,13 @@ export function createMockCas(opts: MockCasOpts = {}) {
       res.writeHead(404); res.end();
     });
   });
-  return new Promise<{ port: number; url: string; requests: CasRequest[] }>((resolve) => {
+  // opts 引用挂到返回值上: 创建后修改（如 opts.channelRequireCaptcha = true）立即生效
+  return new Promise<{ port: number; url: string; requests: CasRequest[]; opts: MockCasOpts }>((resolve) => {
     server.listen(0, "127.0.0.1", () => resolve({
       port: (server.address() as any).port,
       url: `http://127.0.0.1:${(server.address() as any).port}`,
       requests,
+      opts,
     }));
   });
 }
