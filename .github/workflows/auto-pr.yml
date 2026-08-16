@@ -19,14 +19,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           BRANCH="${{ github.ref_name }}"
-          EXISTING=$(gh pr list --head "$BRANCH" --state open --json url -q '.[0].url // empty')
+          EXISTING=$(gh pr list -R "${{ github.repository }}" --head "$BRANCH" --state open --json url -q '.[0].url // empty')
           if [ -n "$EXISTING" ]; then
             echo "PR 已存在: $EXISTING"
             exit 0
           fi
-          gh pr create --base main --head "$BRANCH" \
+          gh pr create -R "${{ github.repository }}" --base main --head "$BRANCH" \
             --title "自动 PR: $BRANCH" \
-            --body "自动创建（push 触发）。CI 绿灯后由 merge-bot 自动合并。
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)" \
-            --label automerge
+            --body '自动创建（push 触发）。CI 绿灯后自动合并。' \
+            --auto
