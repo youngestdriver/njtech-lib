@@ -152,3 +152,5 @@ artifacts/
 - Cookie 会话持久化用 MozillaCookieJar；注意 sfgl(CAS)、vpnlib、seat 三个域分别持有各自 Cookie
 - 验证码 OCR 工具在 GitHub 仓库 `njtech-oauth/captcha-ocr/`（模板匹配，零依赖；但 seat 流程不需要它）
 - 凭据不入库：本目录不含任何密码/学号/token 值
+
+> 本仓库自动化管线：auto-pr + CI + merge-bot（2026-08-17 实测）。
