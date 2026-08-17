@@ -22,9 +22,11 @@ async function doLogin() {
 }
 
 async function ensureAccounts() {
-  const rows = await api.accounts();
-  if (!rows.length) { activeId.value = null; return; }
-  if (!rows.some(r => r.id === activeId.value)) activeId.value = rows[0].id;
+  try {
+    const rows = await api.accounts();
+    if (!rows.length) { activeId.value = null; return; }
+    if (!rows.some(r => r.id === activeId.value)) activeId.value = rows[0].id;
+  } catch (e: any) { ElMessage.error(e.message); }
 }
 
 // brief 原写法 @need-accounts="/* 提示 */" 会编译出 `$event => (/* 提示 */)`（空括号表达式语法错误），

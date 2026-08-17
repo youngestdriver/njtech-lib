@@ -10,7 +10,9 @@ const busy = ref(false);
 
 async function load() {
   if (!props.accountId) return;
-  data.value = await api.current(props.accountId);
+  try {
+    data.value = await api.current(props.accountId);
+  } catch (e: any) { ElMessage.error(e.message); }
 }
 
 async function cancel() {

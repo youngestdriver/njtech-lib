@@ -80,4 +80,16 @@ describe("SeatCanvas", () => {
     // 组件本地选中态最终落在 B
     expect((wrapper2.vm as any).selectedKey).toBe("b");
   });
+
+  it("clearSelection 清空选中态并重绘（终审 I-1）", async () => {
+    setup();
+    const wrapper = mount(SeatCanvas, { props: { map: { ...FIXTURE, seats: [
+      { x: 1, y: 1, key: "a", type: 1, name: "A", seatStatus: 1 },
+    ] } } });
+    const canvas = wrapper.find("canvas");
+    await canvas.trigger("mousedown", { offsetX: 80, offsetY: 80 });
+    expect((wrapper.vm as any).selectedKey).toBe("a");
+    (wrapper.vm as any).clearSelection();
+    expect((wrapper.vm as any).selectedKey).toBeNull();
+  });
 });

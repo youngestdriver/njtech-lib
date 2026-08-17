@@ -16,10 +16,18 @@ const selected = ref<SeatDto | null>(null);
 const captcha = ref<{ imageData: string; captchaToken: string } | null>(null);
 const busy = ref(false);
 const confirmVisible = ref(false);
+const seatCanvasRef = ref<InstanceType<typeof SeatCanvas> | null>(null);
 // v-model 需要可写的 member expression（brief 原写法 v-model="captcha !== null" 无法编译）
+// 终审 I-1: 验证码弹窗关闭（未确认）时一并清空选中态与画布选中环
 const captchaVisible = computed({
   get: () => captcha.value !== null,
-  set: (v: boolean) => { if (!v) captcha.value = null; },
+  set: (v: boolean) => {
+    if (!v) {
+      captcha.value = null;
+      selected.value = null;
+      seatCanvasRef.value?.clearSelection();
+    }
+  },
 });
 
 async function load() {
@@ -28,6 +36,7 @@ async function load() {
     map.value = await api.layout(libId.value, props.accountId);
   } catch (e: any) {
     if (e.status === 400) emit("need-accounts");
+    else ElMessage.error(e.message);
   }
 }
 
@@ -41,6 +50,13 @@ function confirmReserve() {
   doReserve();
 }
 
+// 终审 I-1: 确认弹窗取消 → 清空选中态与画布选中环（spec §3「取消→清选中」）
+function cancelReserve() {
+  selected.value = null;
+  confirmVisible.value = false;
+  seatCanvasRef.value?.clearSelection();
+}
+
 async function doReserve() {
   if (!selected.value || !props.accountId) return;
   busy.value = true;
@@ -49,6 +65,7 @@ async function doReserve() {
     if ("ok" in r && r.ok) {
       ElMessage.success(`已选座 ${selected.value.name}`);
       selected.value = null;
+      seatCanvasRef.value?.clearSelection();
       await load();
     } else if ("needCaptcha" in r) {
       captcha.value = { imageData: r.imageData, captchaToken: r.captchaToken };
@@ -62,12 +79,19 @@ async function doReserve() {
 
 async function submitCaptcha(code: string) {
   if (!captcha.value || !selected.value) return;
-  const r = await api.reserveCaptcha(props.accountId, libId.value, selected.value.key,
-                                     captcha.value.captchaToken, code);
-  captcha.value = null;
-  if ("ok" in r && r.ok) { ElMessage.success("选座成功"); selected.value = null; await load(); }
-  else if ("needCaptcha" in r) { captcha.value = { imageData: r.imageData, captchaToken: r.captchaToken }; }
-  else ElMessage.error(r.message);
+  try {
+    const r = await api.reserveCaptcha(props.accountId, libId.value, selected.value.key,
+                                       captcha.value.captchaToken, code);
+    captcha.value = null;
+    if ("ok" in r && r.ok) {
+      ElMessage.success("选座成功");
+      selected.value = null;
+      seatCanvasRef.value?.clearSelection();
+      await load();
+    }
+    else if ("needCaptcha" in r) { captcha.value = { imageData: r.imageData, captchaToken: r.captchaToken }; }
+    else ElMessage.error(r.message);
+  } catch (e: any) { ElMessage.error(e.message); }
 }
 
 onMounted(load);
@@ -87,14 +111,14 @@ defineExpose({ doReserve, submitCaptcha });
         总 {{ map.seatsTotal }} · 占用 {{ map.seatsUsed }} · 预约 {{ map.seatsBooking }}
       </span>
     </div>
-    <SeatCanvas v-if="map" :map="map" @click-seat="onSeatClick" />
+    <SeatCanvas ref="seatCanvasRef" v-if="map" :map="map" @click-seat="onSeatClick" />
     <ElEmpty v-else-if="!props.accountId" description="请先在账号管理添加账号"
              @click="emit('need-accounts')" />
     <!-- 自绘确认弹窗（预检裁决：不用 ElMessageBox，避免 stub element-plus 内部） -->
     <ElDialog v-model="confirmVisible" title="确认选座" width="320px">
       <span>选择座位 {{ selected?.name ?? selected?.key }}？</span>
       <template #footer>
-        <ElButton @click="confirmVisible = false">取消</ElButton>
+        <ElButton @click="cancelReserve">取消</ElButton>
         <ElButton class="confirm-seat-btn" type="primary" @click="confirmReserve">确认</ElButton>
       </template>
     </ElDialog>

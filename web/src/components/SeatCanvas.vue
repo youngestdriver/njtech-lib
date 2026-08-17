@@ -63,7 +63,11 @@ function onMouseDown(e: MouseEvent) {
 onMounted(draw);
 watch(() => props.map, draw);
 watch(selectedKey, draw);
-defineExpose({ selectedKey });
+/** 清空选中态（终审 I-1: 父组件在成功/取消后调用, 清除画布选中环） */
+function clearSelection() {
+  if (selectedKey.value !== null) { selectedKey.value = null; draw(); }
+}
+defineExpose({ selectedKey, clearSelection });
 </script>
 
 <template>

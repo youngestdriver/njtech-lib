@@ -37,3 +37,4 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npx vue-tsc --noEmit
+      - run: npm run build

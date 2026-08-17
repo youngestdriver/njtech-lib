@@ -12,7 +12,7 @@ const ROWS: AccountRow[] = [
 function mockApi(overrides: Record<string, any> = {}) {
   const calls: string[] = [];
   vi.stubGlobal("fetch", vi.fn(async (url: string, init?: any) => {
-    calls.push(String(url));
+    calls.push((init?.method ?? "GET") + " " + String(url));
     const path = String(url).split("?")[0];
     if (path === "/api/accounts" && (!init?.method || init.method === "GET")) return { status: 200, json: async () => ROWS };
     if (path === "/api/accounts" && init?.method === "POST") return { status: 200, json: async () => ({ ...ROWS[0], username: JSON.parse(init.body).username }) };
@@ -61,7 +61,8 @@ describe("Accounts", () => {
     await wrapper.find("input[placeholder='别名']").setValue("新号");
     await wrapper.find(".add-btn").trigger("click");
     await flushPromises();
-    expect(calls.some(c => c.startsWith("/api/accounts") )).toBe(true);
+    // 终审推荐项: 旧断言 vacuous（mount 的 GET 也能通过），改为匹配 POST
+    expect(calls.some(c => c === "POST /api/accounts")).toBe(true);
     expect((wrapper.vm as any).addForm.username).toBe("");
   });
 });

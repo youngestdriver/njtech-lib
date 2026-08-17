@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { apiRequest, ApiError, login, getToken, clearToken } from "../../src/api/client.js";
+import { apiRequest, login, getToken, clearToken } from "../../src/api/client.js";
 
 function mockFetch(status: number, body: unknown) {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
@@ -26,7 +26,9 @@ describe("apiRequest", () => {
     mockFetch(401, { error: "unauthorized" });
     const listener = vi.fn();
     window.addEventListener("auth-expired", listener);
-    await expect(apiRequest("/api/accounts")).rejects.toBeInstanceOf(ApiError);
+    // 终审推荐项: 断言带上 status（原 toBeInstanceOf 不够具体）;
+    // 401 分支抛固定文案 ApiError(401, "未授权")，不解析响应体 message
+    await expect(apiRequest("/api/accounts")).rejects.toMatchObject({ status: 401, message: "未授权" });
     expect(getToken()).toBeNull();
     expect(listener).toHaveBeenCalledTimes(1);
   });

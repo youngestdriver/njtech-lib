@@ -13,7 +13,10 @@ const addForm = ref({ username: "", password: "", alias: "" });
 const captchaFor = ref<AccountRow | null>(null);
 const busy = ref(false);
 
-async function load() { rows.value = await api.accounts(); }
+async function load() {
+  try { rows.value = await api.accounts(); }
+  catch (e: any) { ElMessage.error(e.message); }
+}
 
 const STATUS_MAP: Record<string, { label: string; type: "success" | "warning" | "danger" | "info" }> = {
   active: { label: "正常", type: "success" },
@@ -51,7 +54,10 @@ async function submitCaptcha(code: string) {
 async function remove(row: AccountRow) {
   if (!window.confirm(`删除账号 ${row.alias ?? row.username}？`)) return;
   try {
-    await api.removeAccount(row.id); ElMessage.success("已删除"); await load();
+    await api.removeAccount(row.id); ElMessage.success("已删除");
+    // 终审推荐项: 删除的是当前选中账号时通知 App 重置 activeId（选中态失效）
+    if (row.id === props.activeId) emit("select-account", 0);
+    await load();
   } catch (e: any) { ElMessage.error(e.message); }
 }
 

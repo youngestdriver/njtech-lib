@@ -98,4 +98,39 @@ describe("SeatMap", () => {
     // 验证码成功后再次刷新画布
     expect(mock.calls.filter(u => u.startsWith("/api/seats/libraries/122811/layout"))).toHaveLength(2);
   });
+
+  it("确认弹窗取消 → selected 清空（终审 I-1）", async () => {
+    setupCanvas();
+    mockApi({});
+    const wrapper = mount(SeatMap, { props: { accountId: 1 } });
+    await flushPromises();
+    // 点击空闲座 → 弹确认
+    await wrapper.find("canvas").trigger("mousedown", { offsetX: 40, offsetY: 40 });
+    await flushPromises();
+    expect((wrapper.vm as any).selected).toMatchObject({ key: "1,1" });
+    expect((wrapper.vm as any).confirmVisible).toBe(true);
+    // 取消
+    await (wrapper.vm as any).cancelReserve();
+    await flushPromises();
+    expect((wrapper.vm as any).selected).toBeNull();
+    expect((wrapper.vm as any).confirmVisible).toBe(false);
+  });
+
+  it("验证码弹窗取消 → captcha 与 selected 清空（终审 I-1）", async () => {
+    setupCanvas();
+    mockApi({ reserve: { needCaptcha: true, imageData: "img-b64", captchaToken: "cap-1" } });
+    const wrapper = mount(SeatMap, { props: { accountId: 1 } });
+    await flushPromises();
+    // 先点空闲座再 doReserve（计划原文漏了点击, selected 为空时 doReserve 会 early return）
+    await wrapper.find("canvas").trigger("mousedown", { offsetX: 40, offsetY: 40 });
+    await flushPromises();
+    await (wrapper.vm as any).doReserve();
+    await flushPromises();
+    expect((wrapper.vm as any).captcha).toBeTruthy();
+    // CaptchaDialog 关闭（computed setter 置 null 并清 selected）
+    (wrapper.vm as any).captchaVisible = false;
+    await flushPromises();
+    expect((wrapper.vm as any).captcha).toBeNull();
+    expect((wrapper.vm as any).selected).toBeNull();
+  });
 });
