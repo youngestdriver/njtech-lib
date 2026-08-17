@@ -487,6 +487,18 @@ describe("SeatCanvas", () => {
     // 组件本地选中态最终落在 B
     expect((wrapper2.vm as any).selectedKey).toBe("b");
   });
+
+  it("clearSelection 清空选中态并重绘（终审 I-1）", async () => {
+    setup();
+    const wrapper = mount(SeatCanvas, { props: { map: { ...FIXTURE, seats: [
+      { x: 1, y: 1, key: "a", type: 1, name: "A", seatStatus: 1 },
+    ] } } });
+    const canvas = wrapper.find("canvas");
+    await canvas.trigger("mousedown", { offsetX: 80, offsetY: 80 });
+    expect((wrapper.vm as any).selectedKey).toBe("a");
+    (wrapper.vm as any).clearSelection();
+    expect((wrapper.vm as any).selectedKey).toBeNull();
+  });
 });
 ```
 注：`HTMLCanvasElement` stub 需包含 `getContext` 返回 mock ctx，且 `mousedown` 事件坐标用 `offsetX/offsetY`（组件实现里按 `event.offsetX/offsetY` 读）。
@@ -557,7 +569,11 @@ function onMouseDown(e: MouseEvent) {
 onMounted(draw);
 watch(() => props.map, draw);
 watch(selectedKey, draw);
-defineExpose({ selectedKey });
+/** 清空选中态（终审 I-1: 父组件在成功/取消后调用, 清除画布选中环） */
+function clearSelection() {
+  if (selectedKey.value !== null) { selectedKey.value = null; draw(); }
+}
+defineExpose({ selectedKey, clearSelection });
 </script>
 
 <template>
@@ -770,6 +786,38 @@ describe("SeatMap", () => {
     await (wrapper.vm as any).submitCaptcha("pk3x");
     await flushPromises();
     expect(wrapper.vm.$data.captcha).toBeNull();
+  });
+
+  it("确认弹窗取消 → selected 清空（终审 I-1）", async () => {
+    const mock = mockCanvas();
+    mockApi({});
+    const wrapper = mount(SeatMap, { props: { accountId: 1 } });
+    await flushPromises();
+    // 点击空闲座 → 弹确认
+    await wrapper.find("canvas").trigger("mousedown", { offsetX: 40, offsetY: 40 });
+    await flushPromises();
+    expect((wrapper.vm as any).selected).toMatchObject({ key: "1,1" });
+    expect((wrapper.vm as any).confirmVisible).toBe(true);
+    // 取消
+    await (wrapper.vm as any).cancelReserve();
+    await flushPromises();
+    expect((wrapper.vm as any).selected).toBeNull();
+    expect((wrapper.vm as any).confirmVisible).toBe(false);
+  });
+
+  it("验证码弹窗取消 → captcha 与 selected 清空（终审 I-1）", async () => {
+    const mock = mockCanvas();
+    mockApi({ reserve: { needCaptcha: true, imageData: "img-b64", captchaToken: "cap-1" } });
+    const wrapper = mount(SeatMap, { props: { accountId: 1 } });
+    await flushPromises();
+    await (wrapper.vm as any).doReserve();
+    await flushPromises();
+    expect((wrapper.vm as any).captcha).toBeTruthy();
+    // CaptchaDialog 关闭（computed setter 置 null）
+    (wrapper.vm as any).captchaVisible = false;
+    await flushPromises();
+    expect((wrapper.vm as any).captcha).toBeNull();
+    expect((wrapper.vm as any).selected).toBeNull();
   });
 });
 ```
