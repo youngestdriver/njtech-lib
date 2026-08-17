@@ -132,3 +132,10 @@ GET /cas/oauth2.0/authorize?client_id=<id>&redirect_uri=<应用回调>&response_
 
 - 平台 API 加密通道（dictconfig 等 linkid 接口）：3DES-ECB，固定密钥 `SphG5lQmUoU=`（从 deploy.js 的 uncompile 混淆函数解出，已验证）；伪 CSRF 头 `Csrf-Key: FzgxPikIetYDlXZM4lRG9taclVDa99lB` / `Csrf-Value: 7964f321f00366a3a287a133dd307ed0` 是硬编码常量
 - 验证码开关通过 CSS content 指纹传给 JS（deploy.js 检查 body 的 computed content 是否含 'x'）
+
+## 9. 2026-08-18 实测：CAS 侧风控变化
+
+- **channel 登录返回 403**：`POST /cas/protected/rest/login` → `{"code":403,"message":"无权限访问"}`（此前多日一直 code:200）。触发条件未明（疑为账号/IP 多次自动化登录被标记；GitHub 故障同期亦不能排除 IP 段影响）
+- **验证码池疑似更新**：模板匹配 OCR 连续失败（此前残差全 0.000）；人工识别提交仍 1320007
+- 表单登录页面/验证码生成/captchaInvisible 机制均未变（页面结构、DEFAULT 端点、findCaptchaCount 全部照旧）
+- **影响**：自动化登录通道暂时受阻；待风控解除后恢复（可换 IP/等待，或用浏览器手动登录验证通道状态）
