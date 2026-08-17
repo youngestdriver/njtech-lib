@@ -1,11 +1,14 @@
 name: merge-bot
 
-# bot 直接 merge 带 automerge 标签的 PR（checks 全绿时）——原生 auto-merge 的等价实现
+# bot 直接 merge 带 automerge 标签的 PR（ci 全绿时）——原生 auto-merge 的等价实现
+# 触发: ①ci workflow_run 完成(绿灯) ②打上 automerge 标签 ③手动 workflow_dispatch
 on:
-  check_run:
+  workflow_run:
+    workflows: ["ci"]
     types: [completed]
   pull_request:
     types: [labeled]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -15,21 +18,25 @@ jobs:
   merge:
     runs-on: ubuntu-latest
     if: >-
-      (github.event_name == 'check_run' && github.event.check_run.name == 'ci'
-        && github.event.check_run.conclusion == 'success')
+      (github.event_name == 'workflow_run'
+        && github.event.workflow_run.conclusion == 'success')
       || (github.event_name == 'pull_request' && github.event.label.name == 'automerge')
+      || github.event_name == 'workflow_dispatch'
     steps:
       - name: 合并 checks 全绿且带 automerge 标签的 PR
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           REPO="${{ github.repository }}"
-          if [ "${{ github.event_name }}" = "check_run" ]; then
-            export SHA="${{ github.event.check_run.head_sha }}"
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            export SHA="${{ github.event.workflow_run.head_sha }}"
             PRS=$(gh pr list -R "$REPO" --state open --label automerge \
               --json number,headRefOid -q '.[] | select(.headRefOid == env.SHA) | .number')
-          else
+          elif [ "${{ github.event_name }}" = "pull_request" ]; then
             PRS="${{ github.event.pull_request.number }}"
+          else
+            PRS=$(gh pr list -R "$REPO" --state open --label automerge \
+              --json number -q '.[].number')
           fi
           for pr in $PRS; do
             HEAD_SHA=$(gh pr view -R "$REPO" "$pr" --json headRefOid -q .headRefOid)
