@@ -88,7 +88,7 @@
 
 `web/vite.config.ts`:
 ```ts
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";   // 必须是 vitest/config: test 块才被 tsc 原生识别
 import vue from "@vitejs/plugin-vue";
 
 export default defineConfig({
