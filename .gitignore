@@ -18,3 +18,7 @@ server/data/
 
 # SDD 工作区（ledger/评审包等临时产物）
 .superpowers/
+
+# 前端构建产物
+web/dist/
+web/node_modules/
