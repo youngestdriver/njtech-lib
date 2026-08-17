@@ -34,8 +34,11 @@ async function add() {
   finally { busy.value = false; }
 }
 
+// Task 7 顺手修复（评审标注 Minor）：reauth/remove 补 try/catch，失败不再 unhandled rejection
 async function reauth(id: number) {
-  await api.reauth(id); ElMessage.success("已触发重登"); await load();
+  try {
+    await api.reauth(id); ElMessage.success("已触发重登"); await load();
+  } catch (e: any) { ElMessage.error(e.message); }
 }
 async function openRecover(row: AccountRow) { captchaFor.value = row; }
 async function submitCaptcha(code: string) {
@@ -47,7 +50,9 @@ async function submitCaptcha(code: string) {
 }
 async function remove(row: AccountRow) {
   if (!window.confirm(`删除账号 ${row.alias ?? row.username}？`)) return;
-  await api.removeAccount(row.id); ElMessage.success("已删除"); await load();
+  try {
+    await api.removeAccount(row.id); ElMessage.success("已删除"); await load();
+  } catch (e: any) { ElMessage.error(e.message); }
 }
 
 onMounted(load);
