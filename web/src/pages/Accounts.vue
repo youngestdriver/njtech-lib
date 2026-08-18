@@ -103,11 +103,12 @@ defineExpose({ addForm, captchaFor });
           <span v-else>-</span>
         </template>
       </ElTableColumn>
-      <ElTableColumn label="操作" width="220">
+      <ElTableColumn label="操作" width="260">
         <template #default="{ row }">
-          <ElButton v-if="row.status === 'needs-captcha'" size="small" type="warning"
-                    @click.stop="openRecover(row as AccountRow)">验证码恢复</ElButton>
-          <ElButton v-else size="small" @click.stop="reauth(row.id)">重登</ElButton>
+          <!-- 两个通道都提供: channel 被风控(403)时表单登录是唯一可用路径 -->
+          <ElButton size="small" type="warning" @click.stop="openRecover(row as AccountRow)">验证码恢复</ElButton>
+          <ElButton v-if="row.status !== 'needs-captcha'" size="small"
+                    @click.stop="reauth(row.id)">重登</ElButton>
           <ElButton size="small" type="danger" @click.stop="remove(row as AccountRow)">删除</ElButton>
         </template>
       </ElTableColumn>
