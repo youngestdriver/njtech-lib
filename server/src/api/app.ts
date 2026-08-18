@@ -50,6 +50,9 @@ export function buildApp(opts: { pool: SessionPool; store: AccountStore; config:
     return { ok: true };
   });
 
+  app.get("/api/accounts/:id/login-captcha-image", async (req) =>
+    pool.startCaptchaLogin(Number((req.params as any).id)));
+
   app.get("/api/accounts/:id/current", async (req) =>
     pool.current(Number((req.params as any).id)));
 

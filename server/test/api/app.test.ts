@@ -19,6 +19,7 @@ function fakePool() {
     cancel: async () => ({ ok: true }),
     reauth: async () => {},
     completeCasLoginWithCaptcha: async () => {},
+    startCaptchaLogin: async () => ({ imageData: "data:image/png;base64,AA==" }),
     remove: async () => {},
   };
 }
@@ -76,6 +77,14 @@ describe("API", () => {
       headers: { authorization: `Bearer ${token}` }, payload: { captchaCode: "pk3x" } });
     expect(ok.statusCode).toBe(200);
     expect(ok.json()).toEqual({ ok: true });
+  });
+  it("login-captcha-image 路由返回验证码图片", async () => {
+    const app = buildApp({ pool: fakePool() as any, store, config });
+    const token = signToken(config.accessPassword, config.tokenTtlSec);
+    const r = await app.inject({ method: "GET", url: "/api/accounts/1/login-captcha-image",
+      headers: { authorization: `Bearer ${token}` } });
+    expect(r.statusCode).toBe(200);
+    expect(r.json().imageData).toContain("data:image/png;base64,");
   });
   it("/healthz 免鉴权", async () => {
     const app = buildApp({ pool: fakePool() as any, store, config });

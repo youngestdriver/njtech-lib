@@ -53,6 +53,8 @@ export const api = {
   reauth: (id: number) => apiRequest<{ ok: true }>(`/api/accounts/${id}/reauth`, { method: "POST" }),
   loginCaptcha: (id: number, captchaCode: string) =>
     apiRequest<{ ok: true }>(`/api/accounts/${id}/login-captcha`, { method: "POST", body: { captchaCode } }),
+  loginCaptchaImage: (id: number) =>
+    apiRequest<{ imageData: string }>(`/api/accounts/${id}/login-captcha-image`),
   current: (id: number) => apiRequest<CurrentReserve>(`/api/accounts/${id}/current`),
   layout: (libId: number, accountId: number) =>
     apiRequest<SeatMapDto>(`/api/seats/libraries/${libId}/layout?accountId=${accountId}`),

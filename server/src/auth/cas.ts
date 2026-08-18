@@ -66,14 +66,16 @@ export class CasClient {
   }
 
   async formLogin(jar: CookieJar, loginPageUrl: string, username: string, password: string,
-                  captchaCode: string): Promise<string> {
-    const page = await this.fetchLoginPage(jar, loginPageUrl);
+                  captchaCode: string, page?: LoginPage): Promise<string> {
+    // 传 page 则跳过重新获取: 验证码图片取自该页面(同 flowkey), 提交必须用同一 flowkey
+    const p = page ?? await this.fetchLoginPage(jar, loginPageUrl);
+    const flowkey = p.flowkey, croypto = p.croypto;
     const body = new URLSearchParams({
       type: "UsernamePassword", _eventId: "submit", geolocation: "",
-      execution: page.flowkey, captcha_code: captchaCode,
+      execution: flowkey, captcha_code: captchaCode,
       username, passwordPre: password,
-      croypto: page.croypto,
-      password: des3Encrypt(page.croypto, password),
+      croypto,
+      password: des3Encrypt(croypto, password),
     }).toString();
     const r = await request(loginPageUrl, {
       jar,

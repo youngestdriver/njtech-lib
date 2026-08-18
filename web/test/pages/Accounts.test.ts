@@ -18,6 +18,8 @@ function mockApi(overrides: Record<string, any> = {}) {
     if (path === "/api/accounts" && init?.method === "POST") return { status: 200, json: async () => ({ ...ROWS[0], username: JSON.parse(init.body).username }) };
     if (path.endsWith("/reauth")) return { status: 200, json: async () => ({ ok: true }) };
     if (path.endsWith("/login-captcha")) return { status: 200, json: async () => ({ ok: true }) };
+    if (path.endsWith("/login-captcha-image"))
+      return { status: 200, json: async () => ({ imageData: "data:image/png;base64,AA==" }) };
     if (overrides.remove && path.startsWith("/api/accounts/")) return { status: 200, json: async () => ({ ok: true }) };
     return { status: 404, json: async () => ({}) };
   }));
@@ -50,6 +52,8 @@ describe("Accounts", () => {
     // script setup 组件无 Options data，vm.$data 为空（brief 原文访问 $data 取不到状态），
     // 改走 defineExpose/setupState 的 vm 直接访问（与 SeatMap.test.ts 同一写法）
     expect((wrapper.vm as any).captchaFor).toMatchObject({ id: 2 });
+    // 弹窗前先取真实验证码图片（startCaptchaLogin 流程）
+    expect((wrapper.vm as any).captchaImage).toContain("data:image/png;base64,");
   });
 
   it("添加账号表单提交", async () => {

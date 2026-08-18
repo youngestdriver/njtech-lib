@@ -11,6 +11,7 @@ const emit = defineEmits<{ (e: "select-account", id: number): void }>();
 const rows = ref<AccountRow[]>([]);
 const addForm = ref({ username: "", password: "", alias: "" });
 const captchaFor = ref<AccountRow | null>(null);
+const captchaImage = ref("");
 const busy = ref(false);
 
 async function load() {
@@ -43,7 +44,15 @@ async function reauth(id: number) {
     await api.reauth(id); ElMessage.success("已触发重登"); await load();
   } catch (e: any) { ElMessage.error(e.message); }
 }
-async function openRecover(row: AccountRow) { captchaFor.value = row; }
+async function openRecover(row: AccountRow) {
+  busy.value = true;
+  try {
+    const r = await api.loginCaptchaImage(row.id);
+    captchaImage.value = r.imageData;
+    captchaFor.value = row;
+  } catch (e: any) { ElMessage.error(e.message); }
+  finally { busy.value = false; }
+}
 async function submitCaptcha(code: string) {
   if (!captchaFor.value) return;
   try {
@@ -66,7 +75,7 @@ onMounted(load);
 // 与 SeatMap 的 captchaVisible 同一处理方式）
 const captchaVisible = computed({
   get: () => captchaFor.value !== null,
-  set: (v: boolean) => { if (!v) captchaFor.value = null; },
+  set: (v: boolean) => { if (!v) { captchaFor.value = null; captchaImage.value = ""; } },
 });
 defineExpose({ addForm, captchaFor });
 </script>
@@ -111,7 +120,7 @@ defineExpose({ addForm, captchaFor });
       <ElFormItem><ElButton class="add-btn" type="primary" :loading="busy" @click="add">添加账号</ElButton></ElFormItem>
     </ElForm>
 
-    <CaptchaDialog v-model="captchaVisible" :image-data="'data:image/png;base64,AA=='"
+    <CaptchaDialog v-model="captchaVisible" :image-data="captchaImage"
                    title="CAS 验证码登录" @confirm="submitCaptcha" />
   </div>
 </template>
