@@ -12,10 +12,12 @@ const RETRY_DELAYS = [1000, 2000, 4000];
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
 interface PendingCaptcha { libId: number; seatKey: string; captchaToken: string }
+interface PendingCasLogin { jar: CookieJar; page: import("../auth/cas.js").LoginPage }
 
 export class SessionPool {
   private jars = new Map<number, CookieJar>();
   private pendingCaptcha = new Map<number, PendingCaptcha>();
+  private pendingCasLogin = new Map<number, PendingCasLogin>();
   private failStreak = new Map<number, number>();
   private locker = new Locker();
 
@@ -40,6 +42,7 @@ export class SessionPool {
   async remove(accountId: number): Promise<void> {
     this.jars.delete(accountId);
     this.pendingCaptcha.delete(accountId);
+    this.pendingCasLogin.delete(accountId);
     this.store.remove(accountId);
   }
 
@@ -201,9 +204,9 @@ export class SessionPool {
     });
   }
 
-  /** needs-captcha 恢复: 经典表单登录(带验证码) → TGC 入 jar → 全链收尾。
-   * formLogin 成功后 jar 里有新 TGC, completeLogin 的 SSO 直通会自动走完 ticket 链。 */
-  async completeCasLoginWithCaptcha(id: number, captchaCode: string): Promise<void> {
+  /** 表单登录第一步: 走状态机到 CAS 登录页, 取验证码图片, 保存同一会话待提交。
+   * 取图与提交必须同 SESSION 同 flowkey（8-16 破解的关键约束）。 */
+  async startCaptchaLogin(id: number): Promise<{ imageData: string }> {
     return this.locker.withLock(`acct:${id}`, async () => {
       const row = this.store.list().find(a => a.id === id);
       if (!row) throw new Error("账号不存在");
@@ -211,12 +214,33 @@ export class SessionPool {
       this.jars.set(id, jar);
       try {
         const u5 = await this.sm.start(jar);
-        const page = await this.sm.toCasLoginPage(jar, u5);
+        const loginPage = await this.sm.toCasLoginPage(jar, u5);
+        const page = await this.cas.fetchLoginPage(jar, loginPage.url);
+        const img = await this.cas.fetchCaptchaImage(jar, loginPage.url);
+        this.pendingCasLogin.set(id, { jar, page });
+        return { imageData: "data:image/png;base64," + img.toString("base64") };
+      } catch (e) {
+        throw e;
+      }
+    });
+  }
+
+  /** 表单登录第二步: 用第一步保存的会话提交验证码 → TGC 入 jar → 全链收尾。 */
+  async completeCasLoginWithCaptcha(id: number, captchaCode: string): Promise<void> {
+    return this.locker.withLock(`acct:${id}`, async () => {
+      const row = this.store.list().find(a => a.id === id);
+      if (!row) throw new Error("账号不存在");
+      const pending = this.pendingCasLogin.get(id);
+      if (!pending) throw new Error("请先获取验证码图片（startCaptchaLogin）");
+      const { jar, page } = pending;
+      try {
+        const u5 = await this.sm.start(jar);
         await this.cas.formLogin(jar, page.url, row.username,
-                                 this.store.getPassword(id), captchaCode);
+                                 this.store.getPassword(id), captchaCode, page);
         await this.sm.completeLogin(jar, u5);
         this.store.setStatus(id, "active");
         this.failStreak.set(id, 0);
+        this.pendingCasLogin.delete(id);
       } catch (e) {
         this.store.setStatus(id, "needs-captcha", `验证码登录失败: ${(e as Error).message}`);
         throw e;
