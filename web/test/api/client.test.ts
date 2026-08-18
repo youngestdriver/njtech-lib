@@ -39,6 +39,13 @@ describe("apiRequest", () => {
       .rejects.toMatchObject({ status: 400, message: "缺少参数" });
   });
 
+  it("无 body 请求不带 Content-Type（Fastify 空 body + json 报 400）", async () => {
+    mockFetch(200, { ok: true });
+    await apiRequest("/api/accounts/1/reauth", { method: "POST" });
+    const [, init] = vi.mocked(fetch).mock.calls[0];
+    expect(init?.headers).not.toHaveProperty("Content-Type");
+  });
+
   it("500 时 message 优先于 error 字段（Fastify error 是通用文案）", async () => {
     mockFetch(500, { error: "Internal Server Error", message: "账号不可用: failed" });
     await expect(apiRequest("/api/accounts/1/current"))
