@@ -33,7 +33,8 @@ export async function apiRequest<T>(path: string, opts: { method?: string; body?
   }
   // 用状态码范围而非 res.ok：测试 mock 的响应对象无 ok 字段（与真实 Response 等价）
   if (res.status < 200 || res.status >= 300) {
-    throw new ApiError(res.status, data?.error ?? data?.message ?? "请求失败");
+    // message 优先: Fastify 500 的 error 字段是通用 "Internal Server Error", message 才是真实原因
+    throw new ApiError(res.status, data?.message ?? data?.error ?? "请求失败");
   }
   return data as T;
 }
