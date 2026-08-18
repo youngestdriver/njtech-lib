@@ -114,6 +114,15 @@ describe("SessionPool", () => {
     seatMock.graphql.reserve = null;
   });
 
+  it("非 active 账号操作抛 statusCode=409（避免前端收到 500）", async () => {
+    casMock.opts.channelLoginResponse = { status: 502, body: "<html>bad</html>" };
+    const a = await pool.addAccount("2023001", "mypassword");
+    expect(a.status).toBe("failed");
+    casMock.opts.channelLoginResponse = undefined;
+    await expect(pool.current(a.id)).rejects.toMatchObject({ statusCode: 409 });
+    await expect(pool.layout(a.id, 122811)).rejects.toMatchObject({ statusCode: 409 });
+  });
+
   it("reauth 失败 1-2 次保持 active, 第 3 次 failed", async () => {
     const a = await pool.addAccount("2023001", "mypassword");
     casMock.opts.channelLoginResponse = { status: 502, body: "<html>bad</html>" };

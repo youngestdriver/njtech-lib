@@ -95,10 +95,19 @@ export class SessionPool {
     throw lastErr ?? new Error("登录失败");
   }
 
+  /** 会话不可用按 409/404 返回（Fastify 识别 statusCode 属性; 前端能显示真实 message 而非 500） */
   private async ensureSession(id: number): Promise<CookieJar> {
     const row = this.store.list().find(a => a.id === id);
-    if (!row) throw new Error("账号不存在");
-    if (row.status !== "active") throw new Error(`账号不可用: ${row.status}`);
+    if (!row) {
+      const err = new Error("账号不存在") as Error & { statusCode?: number };
+      err.statusCode = 404;
+      throw err;
+    }
+    if (row.status !== "active") {
+      const err = new Error(`账号不可用: ${row.status}`) as Error & { statusCode?: number };
+      err.statusCode = 409;
+      throw err;
+    }
     return this.jar(id);
   }
 

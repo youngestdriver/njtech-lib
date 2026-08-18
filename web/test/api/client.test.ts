@@ -39,6 +39,12 @@ describe("apiRequest", () => {
       .rejects.toMatchObject({ status: 400, message: "缺少参数" });
   });
 
+  it("500 时 message 优先于 error 字段（Fastify error 是通用文案）", async () => {
+    mockFetch(500, { error: "Internal Server Error", message: "账号不可用: failed" });
+    await expect(apiRequest("/api/accounts/1/current"))
+      .rejects.toMatchObject({ status: 500, message: "账号不可用: failed" });
+  });
+
   it("网络错误 → ApiError(0)", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("fetch failed")));
     await expect(apiRequest("/api/accounts")).rejects.toMatchObject({ status: 0, message: "无法连接后端" });
