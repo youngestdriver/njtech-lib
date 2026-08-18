@@ -45,9 +45,10 @@ describe("Accounts", () => {
     mockApi();
     const wrapper = mount(Accounts, { props: { activeId: 1 } });
     await flushPromises();
-    const recoverBtn = wrapper.findAll("button").find(b => b.text().includes("验证码恢复"));
-    expect(recoverBtn).toBeTruthy();
-    await recoverBtn!.trigger("click");
+    // 所有行都显示验证码恢复按钮（channel 风控时唯一通道）——取第二行（needs-captcha 行）
+    const recoverBtns = wrapper.findAll("button").filter(b => b.text().includes("验证码恢复"));
+    expect(recoverBtns.length).toBeGreaterThanOrEqual(2);
+    await recoverBtns[1].trigger("click");
     await flushPromises();
     // script setup 组件无 Options data，vm.$data 为空（brief 原文访问 $data 取不到状态），
     // 改走 defineExpose/setupState 的 vm 直接访问（与 SeatMap.test.ts 同一写法）
