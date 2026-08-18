@@ -16,7 +16,8 @@ export async function apiRequest<T>(path: string, opts: { method?: string; body?
     res = await fetch(path, {
       method: opts.method ?? "GET",
       headers: {
-        "Content-Type": "application/json",
+        // 无 body 时不声明 json content-type（Fastify 对空 body + json 报 400）
+        ...(opts.body !== undefined ? { "Content-Type": "application/json" } : {}),
         ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
       },
       body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
